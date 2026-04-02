@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spoorthi AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="chat-card">
+        <header class="chat-header">
+          <div class="brand">Spoorthi AI</div>
+          <h1>Your fest assistant</h1>
+          <p>Ask about venues, timings, registrations, and available events.</p>
+        </header>
+
+        <section id="chat-messages" class="chat-messages" aria-live="polite">
+          <div class="message bot">
+            <div class="bubble">
+              Hi, I’m Spoorthi AI. Ask me where an event is happening, what time it starts, or what events are available today.
+            </div>
+          </div>
+        </section>
+
+        <form id="chat-form" class="chat-form">
+          <textarea
+            id="message-input"
+            rows="1"
+            placeholder="Type your question..."
+            autocomplete="off"
+          ></textarea>
+          <button id="send-button" type="submit">Send</button>
+        </form>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </body>
+</html>

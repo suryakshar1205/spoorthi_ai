@@ -1,0 +1,13 @@
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+httpx==0.28.1
+python-jose==3.5.0
+bcrypt==4.3.0
+python-multipart==0.0.20
+python-dotenv==1.1.1
+faiss-cpu==1.11.0.post1
+numpy==2.3.1
+duckduckgo-search==8.1.1
+pypdf==5.8.0
+pytest==8.4.1
+pytest-asyncio==1.0.0
