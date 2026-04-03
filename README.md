@@ -166,6 +166,17 @@ Open:
 - backend health: `http://127.0.0.1:8000/health`
 - backend docs: `http://127.0.0.1:8000/docs`
 
+6. Optional Docker quick start:
+
+```bash
+docker compose up --build
+```
+
+The Docker Compose setup now starts:
+- the backend with `LLM_PROVIDER=local`
+- the frontend pointed at `http://localhost:8000`
+- persistent backend data from `backend/data`
+
 **Lightweight Flask Demo**
 
 If you want the smaller single-process Flask version instead:
@@ -198,6 +209,23 @@ Current repo deployment files are split by app path:
 So at the moment:
 - deploying the main product requires the `backend/` and `frontend/` paths
 - deploying the root Flask app uses the root Procfile/requirements
+
+**Recommended Deployment Path**
+
+For the current main product:
+- deploy `backend/` to Render or Railway
+- deploy `frontend/` to Vercel or a Node host
+- set `NEXT_PUBLIC_API_URL` in the frontend deployment
+- set `ALLOWED_ORIGINS` in the backend deployment to the final frontend URL
+
+Helpful backend envs for deployment:
+- `LLM_PROVIDER`
+- `OPENAI_API_KEY` if using OpenAI
+- `OLLAMA_BASE_URL` and `OLLAMA_MODEL` if using Ollama
+- `JWT_SECRET`
+- `ADMIN_USERNAME`
+- `ADMIN_PASSWORD`
+- `ALLOWED_ORIGINS`
 
 **Notes About Current Behavior**
 

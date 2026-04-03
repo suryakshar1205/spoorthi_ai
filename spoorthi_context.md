@@ -1,6 +1,6 @@
 # Spoorthi Fest Context
 
-This document is a structured reference file for testing the Spoorthi AI assistant.
+This document is a structured reference file for testing the Spoorthi Chatbot assistant.
 
 Important note:
 - This is mock and demo-friendly context for development.

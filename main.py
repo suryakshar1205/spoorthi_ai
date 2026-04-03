@@ -99,7 +99,7 @@ def main() -> None:
     create_services()
     if os.environ.get("PORT") is None and os.environ.get("SPOORTHI_OPEN_BROWSER", "true").lower() == "true":
         Timer(1.0, open_browser).start()
-    logger.info("Starting Spoorthi AI on %s", APP_URL)
+    logger.info("Starting Spoorthi Chatbot on %s", APP_URL)
     app.run(host="0.0.0.0", port=APP_PORT, debug=False, use_reloader=False, threaded=True)
 
 

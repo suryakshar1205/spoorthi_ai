@@ -1,4 +1,4 @@
-# Spoorthi AI Knowledge Base
+# Spoorthi Chatbot Knowledge Base
 
 ## Overview
 Spoorthi is a technical fest conducted annually.

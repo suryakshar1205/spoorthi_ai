@@ -38,13 +38,15 @@ from app.services.vector_service import VectorService
 from app.utils.text import build_chunk_records
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-FRONTEND_DIR = REPO_ROOT / "frontend"
-LOG_DIR = REPO_ROOT / "logs"
+APP_DIR = Path(__file__).resolve().parent
+BACKEND_DIR = APP_DIR.parent
+PROJECT_ROOT = BACKEND_DIR.parent if (BACKEND_DIR.parent / "frontend").exists() else BACKEND_DIR
+FRONTEND_DIR = PROJECT_ROOT / "frontend"
+LOG_DIR = PROJECT_ROOT / "logs"
 SAMPLE_CONTEXT_CANDIDATES = [
-    REPO_ROOT / "backend" / "sample_data" / "spoorthi_test_context.txt",
-    REPO_ROOT / "backend" / "sample_data" / "spoorthi_context.txt",
-    REPO_ROOT / "backend" / "sample_data" / "spporthi_context.txt",
+    BACKEND_DIR / "sample_data" / "spoorthi_test_context.txt",
+    BACKEND_DIR / "sample_data" / "spoorthi_context.txt",
+    BACKEND_DIR / "sample_data" / "spporthi_context.txt",
 ]
 FRONTEND_HOST = os.getenv("FRONTEND_HOST", "127.0.0.1")
 FRONTEND_PORT = int(os.getenv("FRONTEND_PORT", "3000"))
@@ -330,5 +332,5 @@ if __name__ == "__main__":
         host=BACKEND_HOST,
         port=BACKEND_PORT,
         reload=DEV_MODE,
-        reload_dirs=[str(REPO_ROOT / "backend")] if DEV_MODE else None,
+        reload_dirs=[str(BACKEND_DIR)] if DEV_MODE else None,
     )

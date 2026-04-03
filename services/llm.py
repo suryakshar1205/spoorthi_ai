@@ -3,9 +3,9 @@ from __future__ import annotations
 import re
 
 
-FALLBACK_MESSAGE = "I don’t have that information. Please contact the event organizers."
+FALLBACK_MESSAGE = "I don’t have that information. Please contact the organizers."
 
-STRICT_PROMPT_TEMPLATE = """You are Spoorthi AI, an intelligent and friendly assistant for a technical fest.
+STRICT_PROMPT_TEMPLATE = """You are Spoorthi Chatbot, an intelligent and friendly assistant for a technical fest.
 
 Guidelines:
 - Answer ONLY from the given context
@@ -13,7 +13,7 @@ Guidelines:
 - Use bullet points if needed
 - Be natural and conversational
 - If answer is unknown, say:
-  'I don’t have that information. Please contact the event organizers.'
+  'I don’t have that information. Please contact the organizers.'
 
 Context:
 {context}

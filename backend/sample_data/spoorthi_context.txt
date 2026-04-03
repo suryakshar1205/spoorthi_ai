@@ -1,5 +1,5 @@
 # Spoorthi Fest: Comprehensive Context & Master Schedule
-**Official Reference Document for Spoorthi AI Assistant**
+**Official Reference Document for Spoorthi Chatbot**
 
 ## 1. Institutional Overview & Event Identity
 * **About JNTUH:** JNTUH College of Engineering, Hyderabad, is a premier institution known for high educational standards, emphasizing both theoretical knowledge and practical exposure to produce highly skilled professionals.

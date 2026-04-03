@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from app.config import Settings
 from app.services.auth_service import AuthService
-from app.services.llm_service import GroqProvider, LLMService, OllamaProvider, OpenAIProvider
+from app.services.llm_service import LLMService, LocalProvider, OllamaProvider, OpenAIProvider
 
 
 def test_auth_service_validates_credentials() -> None:
@@ -16,9 +16,9 @@ def test_auth_service_validates_credentials() -> None:
 
 def test_llm_service_switches_provider_from_config() -> None:
     openai_service = LLMService(Settings(llm_provider="openai"))
-    groq_service = LLMService(Settings(llm_provider="groq"))
     ollama_service = LLMService(Settings(llm_provider="ollama"))
+    local_service = LLMService(Settings(llm_provider="local"))
 
     assert isinstance(openai_service.provider, OpenAIProvider)
-    assert isinstance(groq_service.provider, GroqProvider)
     assert isinstance(ollama_service.provider, OllamaProvider)
+    assert isinstance(local_service.provider, LocalProvider)

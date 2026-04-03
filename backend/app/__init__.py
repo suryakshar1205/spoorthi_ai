@@ -1,1 +1,1 @@
-"""Spoorthi AI backend package."""
+"""Spoorthi Chatbot backend package."""

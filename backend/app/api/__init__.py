@@ -1,1 +1,1 @@
-"""API routers for Spoorthi AI."""
+"""API routers for Spoorthi Chatbot."""

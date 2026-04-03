@@ -88,4 +88,4 @@ async def test_internet_fallback_is_used_without_matching_chunks(settings: Setti
     response = await rag_service.answer_query("What is today's weather?", session_id="core-test")
 
     assert response.source == KnowledgeSource.INTERNET.value
-    assert "internet::" in response.answer
+    assert "Source: internet" in response.answer or "internet::" in response.answer

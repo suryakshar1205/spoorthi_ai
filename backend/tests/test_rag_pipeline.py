@@ -6,7 +6,7 @@ import pytest
 
 from app.config import Settings
 from app.services.embeddings import EmbeddingService
-from app.services.llm_service import FALLBACK_ANSWER, LLMService
+from app.services.llm_service import LLMService
 from app.services.memory import MemoryService
 from app.services.rag_service import RAGService
 from app.services.reranker import RerankerService
@@ -60,7 +60,7 @@ async def test_rag_pipeline_validation_queries(tmp_path: Path) -> None:
     beginners = await rag_service.answer_query("Suggest some events for beginners", session_id="test-session")
     workshops = await rag_service.answer_query("What is the timing of workshops?", session_id="test-session")
 
-    assert hackathon.answer == FALLBACK_ANSWER
+    assert "Block A Lab 3" in hackathon.answer
     assert rules.answer
     assert "beginner-friendly" in beginners.answer.lower() or "here are a few" in beginners.answer.lower()
     assert "11:00 AM" in workshops.answer or "AI Workshop" in workshops.answer

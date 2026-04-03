@@ -4,8 +4,14 @@ services:
   backend:
     build:
       context: ./backend
-    env_file:
-      - ./backend/.env.example
+    environment:
+      APP_NAME: Spoorthi Chatbot API
+      LLM_PROVIDER: local
+      LOCAL_FALLBACK_ENABLED: "true"
+      ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      JWT_SECRET: change-me-in-production
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin123
     ports:
       - "8000:8000"
     volumes:
@@ -14,8 +20,8 @@ services:
   frontend:
     build:
       context: ./frontend
-    env_file:
-      - ./frontend/.env.example
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
     ports:
       - "3000:3000"
     depends_on:
