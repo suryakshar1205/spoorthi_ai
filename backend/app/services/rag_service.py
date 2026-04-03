@@ -16,6 +16,14 @@ from app.services.search_service import SearchService
 
 
 logger = logging.getLogger(__name__)
+EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+PHONE_RE = re.compile(r"(?:\+?\d[\d\s\-]{8,}\d)")
+CONTACT_KEYWORDS = ("coordinator", "organizer", "contact", "phone", "email", "help desk")
+ROLE_CONTACT_RE = re.compile(
+    r"\b(?P<role>(?:faculty|student|event|overall|test(?: edition)?)?\s*coordinator)\s*:\s*(?P<name>[A-Za-z][A-Za-z .'\-]{1,60})",
+    re.IGNORECASE,
+)
+HELP_DESK_RE = re.compile(r"\bhelp\s*desk(?:\s*location)?\s*:\s*(?P<value>[^|\n.;]{3,100})", re.IGNORECASE)
 
 
 class RAGService:
@@ -52,6 +60,7 @@ class RAGService:
         retrieval_query = self._build_retrieval_query(session_key, query)
         context, source, confidence, selected = await self.retrieve_context(retrieval_query, session_key)
         answer = await self.llm_service.generate_response(context=context, query=query)
+        answer = await self._augment_fallback_with_contacts(answer, context)
 
         self.memory_service.append_turn(session_key, "user", query)
         self.memory_service.append_turn(session_key, "assistant", answer)
@@ -103,12 +112,20 @@ class RAGService:
             context, source, confidence, selected = await self.retrieve_context(retrieval_query, session_key)
             yield {"type": "meta", "source": source, "confidence": confidence, "session_id": session_key}
 
-            answer_parts: list[str] = []
-            async for token in self.llm_service.stream_response(context=context, query=query):
-                answer_parts.append(token)
-                yield {"type": "token", "content": token}
+            # If no relevant context is found, enrich the fallback with organizer contacts when available.
+            if context == "NO_CONTEXT_FOUND":
+                answer = await self._augment_fallback_with_contacts(FALLBACK_ANSWER, context)
+                for token in re.findall(r"\S+\s*", answer):
+                    yield {"type": "token", "content": token}
+            else:
+                answer_parts: list[str] = []
+                async for token in self.llm_service.stream_response(context=context, query=query):
+                    answer_parts.append(token)
+                    yield {"type": "token", "content": token}
 
-            answer = "".join(answer_parts).strip() or FALLBACK_ANSWER
+                answer = "".join(answer_parts).strip() or FALLBACK_ANSWER
+                answer = await self._augment_fallback_with_contacts(answer, context)
+
             self.memory_service.append_turn(session_key, "user", query)
             self.memory_service.append_turn(session_key, "assistant", answer)
             self._log_answer(query, source, selected, answer)
@@ -160,3 +177,116 @@ class RAGService:
             [f"{match.chunk.file_name}:{match.chunk.metadata.get('section', 'general')}:{match.rerank_score or match.score:.2f}" for match in matches],
             answer[:220],
         )
+
+    async def _augment_fallback_with_contacts(self, answer: str, context: str) -> str:
+        if answer.strip() != FALLBACK_ANSWER:
+            return answer
+
+        contact_lines = self._extract_contact_lines(context)
+        if not contact_lines:
+            contact_lines = await self._lookup_contact_lines()
+
+        if not contact_lines:
+            return answer
+
+        return (
+            f"{FALLBACK_ANSWER}\n\n"
+            "You can reach the organizers using these details from the current knowledge base:\n"
+            + "\n".join(f"- {line}" for line in contact_lines[:3])
+        )
+
+    async def _lookup_contact_lines(self) -> list[str]:
+        contact_query = "organizer contact coordinator email phone help desk"
+        retrieved = await self.retriever.retrieve(contact_query, top_k=max(5, self.settings.top_k))
+        selected = self.reranker.rerank(contact_query, retrieved, top_n=self.settings.rerank_top_n)
+        if not selected:
+            return []
+
+        lines: list[str] = []
+        for match in selected:
+            lines.extend(self._extract_contact_lines(match.chunk.text))
+
+        deduped: list[str] = []
+        seen: set[str] = set()
+        for line in lines:
+            normalized = line.lower().strip()
+            if normalized in seen:
+                continue
+            seen.add(normalized)
+            deduped.append(line)
+        return deduped
+
+    def _extract_contact_lines(self, text: str) -> list[str]:
+        if not text or text == "NO_CONTEXT_FOUND":
+            return []
+
+        cleaned_text = re.sub(r"[*_`#]+", "", text)
+        cleaned_text = re.sub(r"\s{2,}", " ", cleaned_text)
+
+        prioritized: list[str] = []
+
+        for match in ROLE_CONTACT_RE.finditer(cleaned_text):
+            role = self._normalize_label(match.group("role"))
+            name = self._normalize_contact_value(match.group("name"))
+            if role and name:
+                prioritized.append(f"{role}: {name}")
+
+        for email in EMAIL_RE.findall(cleaned_text):
+            normalized_email = email.strip().lower()
+            if normalized_email:
+                prioritized.append(f"Email: {normalized_email}")
+
+        for phone in PHONE_RE.findall(cleaned_text):
+            normalized_phone = self._normalize_phone(phone)
+            if normalized_phone:
+                prioritized.append(f"Phone: {normalized_phone}")
+
+        for match in HELP_DESK_RE.finditer(cleaned_text):
+            help_desk_value = self._normalize_contact_value(match.group("value"))
+            if help_desk_value:
+                prioritized.append(f"Help Desk: {help_desk_value}")
+
+        # Fallback for simple line-based contact rows while filtering noisy, long narrative lines.
+        for raw_line in cleaned_text.splitlines():
+            line = raw_line.strip().strip("- ")
+            if not line or len(line) > 140:
+                continue
+
+            lowered = line.lower()
+            has_email = EMAIL_RE.search(line) is not None
+            has_phone = PHONE_RE.search(line) is not None
+            has_role = "coordinator:" in lowered or "organizer:" in lowered
+            has_help_desk = "help desk" in lowered and ":" in lowered
+            if not (has_email or has_phone or has_role or has_help_desk):
+                continue
+
+            candidate = self._normalize_contact_value(line)
+            if candidate:
+                prioritized.append(candidate)
+
+        deduped: list[str] = []
+        seen: set[str] = set()
+        for line in prioritized:
+            normalized = re.sub(r"\s+", " ", line.lower()).strip()
+            if not normalized or normalized in seen:
+                continue
+            seen.add(normalized)
+            deduped.append(line)
+
+        return deduped
+
+    def _normalize_label(self, label: str) -> str:
+        normalized = self._normalize_contact_value(label)
+        if not normalized:
+            return ""
+        return " ".join(word.capitalize() for word in normalized.split())
+
+    def _normalize_contact_value(self, value: str) -> str:
+        value = re.sub(r"\s{2,}", " ", value)
+        value = value.strip(" -|:;,.")
+        return value.strip()
+
+    def _normalize_phone(self, phone: str) -> str:
+        normalized = re.sub(r"\s+", " ", phone).strip()
+        normalized = normalized.strip(" -|:;,.")
+        return normalized

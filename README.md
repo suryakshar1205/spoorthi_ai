@@ -1,84 +1,224 @@
-# Spoorthi_AI
+# Spoorthi Chatbot
 
-Spoorthi_AI is a deployable hybrid RAG fest assistant with a FastAPI backend and Next.js frontend. It supports provider-based LLM switching (`local`, `openai`, `ollama`), FAISS-backed document retrieval, internet fallback, JWT-protected admin operations, and a premium chat/admin UI.
+Spoorthi Chatbot is a fest-assistant project for answering questions about Spoorthi using retrieved document context, curated quick replies, and an admin-managed knowledge base.
 
-## Stack
+The repository currently contains **two runnable app paths**:
 
-- Backend: FastAPI, FAISS, bcrypt, JWT, DuckDuckGo/SerpAPI fallback, provider-agnostic LLM service
-- Frontend: Next.js App Router, Tailwind CSS, Framer Motion
-- Deployment: Render/Railway-ready backend, Vercel-ready frontend, Docker support
+1. **Primary app**: `backend/` + `frontend/`
+   This is the main product path and the one the recent work has been focused on.
+   It uses:
+   - FastAPI backend
+   - Next.js frontend
+   - live document indexing
+   - admin console
+   - local/OpenAI/Ollama response providers
 
-## Backend Features
+2. **Lightweight demo app**: root-level `main.py`
+   This is a smaller Flask-based fallback/demo app that serves `templates/` + `static/` directly.
 
-- `LLMService` abstraction with OpenAI, Ollama, and a built-in local provider that needs no API key
-- Persistent FAISS vector index with incremental chunk appends
-- Real-time knowledge injection for uploads and manual context
-- Hybrid RAG routing: document first, internet fallback below similarity threshold
-- Admin authentication with bcrypt password checks and JWT route protection
-- Streaming chat endpoint with document/internet status events
+If you want the current full UI with admin, voice input, dark mode, quick questions, and the richer RAG flow, use the **primary app**.
 
-## Frontend Features
+**Current Recommended Run Mode**
 
-- Responsive chat interface with streaming output
-- Source badges for `document` and `internet`
-- Voice input via Web Speech API
-- Dark mode toggle
-- Chat history persistence in local storage
-- Admin dashboard with drag-and-drop uploads, progress bar, manual context injection, document deletion, and reindex trigger
+Use the combined launcher in [backend/app/main.py](C:\Users\surya\Desktop\spoorthi_ai\backend\app\main.py):
 
-## Local Setup
+```bash
+python backend/app/main.py
+```
 
-### Backend
+What it does:
+- starts the FastAPI backend on `http://127.0.0.1:8000`
+- starts the Next.js frontend on `http://localhost:3000`
+- opens the frontend automatically in your browser
+- runs in dev mode by default, so code changes show up after refresh
+
+**Primary App Stack**
+
+Backend:
+- FastAPI
+- FAISS-backed persistent knowledge index
+- admin auth with JWT + bcrypt
+- retriever + reranker pipeline
+- local/OpenAI/Ollama response providers
+- manual context injection and document upload
+
+Frontend:
+- Next.js App Router
+- Tailwind CSS
+- Framer Motion
+- dark mode
+- voice input
+- admin console
+- quick-question dropdown
+
+**Current Product Features**
+
+Chat experience:
+- Spoorthi Chatbot branding across the UI
+- streaming-style replies
+- quick prepared questions from a dropdown
+- friendly handling for greetings and small talk
+- fallback messaging when the answer is not in the knowledge base
+- organizer contact enrichment on fallback when valid contact details exist in uploaded context
+
+Knowledge management:
+- admin login
+- upload `.pdf`, `.txt`, `.md`
+- add manual knowledge instantly
+- delete indexed documents
+- rebuild the index from the admin panel
+
+Answering behavior:
+- predefined direct answers for a small set of common demo questions
+- RAG for general fest questions
+- fallback to:
+  `I don't have that information. Please contact the organizers.`
+- if organizer contact data exists in KB, the bot appends those details to the fallback
+
+**Project Layout**
+
+Main app:
+
+```text
+backend/
+  app/
+    api/
+    models/
+    services/
+    utils/
+    config.py
+    main.py
+  requirements.txt
+  .env.example
+
+frontend/
+  app/
+  components/
+  lib/
+  package.json
+  .env.example
+```
+
+Lightweight Flask demo:
+
+```text
+main.py
+services/
+templates/
+static/
+data/
+requirements.txt
+Procfile
+runtime.txt
+```
+
+**Local Setup**
+
+1. Backend dependencies:
 
 ```bash
 cd backend
-python -m venv .venv
-. .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-uvicorn app.main:app --reload
+python -m pip install -r requirements.txt
 ```
 
-### Frontend
+2. Frontend dependencies:
 
 ```bash
 cd frontend
 npm install
-cp .env.example .env.local
-npm run dev
 ```
 
-## Environment
+3. Backend environment:
 
-Key backend variables:
+Use [backend/.env.example](C:\Users\surya\Desktop\spoorthi_ai\backend\.env.example) as the starting point.
 
+Important values:
 - `LLM_PROVIDER=local|openai|ollama`
 - `OPENAI_API_KEY`
+- `OPENAI_MODEL`
 - `OLLAMA_BASE_URL`
-- `OPENAI_MODEL`, `OLLAMA_MODEL`
-- `LLM_TEMPERATURE`
-- `LLM_MAX_TOKENS`
-- `SIMILARITY_THRESHOLD`
+- `OLLAMA_MODEL`
+- `LOCAL_FALLBACK_ENABLED=true`
 - `JWT_SECRET`
 - `ADMIN_USERNAME`
-- `ADMIN_PASSWORD` or `ADMIN_PASSWORD_HASH`
+- `ADMIN_PASSWORD`
+- `SPOORTHI_DEV_MODE=true`
+- `ALLOWED_ORIGINS=http://localhost:3000`
 
-Frontend variable:
+4. Frontend environment:
 
-- `NEXT_PUBLIC_API_URL=http://localhost:8000`
+Use [frontend/.env.example](C:\Users\surya\Desktop\spoorthi_ai\frontend\.env.example).
 
-## API
+Default:
 
-- `POST /ask`
-- `POST /ask/stream`
-- `POST /admin/login`
-- `GET /admin/docs`
-- `POST /admin/upload`
-- `POST /admin/add-context`
-- `DELETE /admin/delete/{id}`
-- `POST /admin/reindex`
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
 
-## Notes
+5. Start the full app:
 
-- The backend uses a deterministic hashing embedder and can now answer in `local` mode without any API key.
-- For production, replace defaults in `.env` with secure secrets and real admin credentials.
+```bash
+python backend/app/main.py
+```
+
+Open:
+- frontend: `http://localhost:3000`
+- backend health: `http://127.0.0.1:8000/health`
+- backend docs: `http://127.0.0.1:8000/docs`
+
+**Lightweight Flask Demo**
+
+If you want the smaller single-process Flask version instead:
+
+```bash
+python -m pip install -r requirements.txt
+python main.py
+```
+
+This serves the root `templates/` and `static/` files on port `5000` by default.
+
+Use this mode only if you specifically want the simplified Flask demo. It is not the main product path anymore.
+
+**Deployment Status**
+
+Current repo deployment files are split by app path:
+
+- [render.yaml](C:\Users\surya\Desktop\spoorthi_ai\render.yaml)
+  Targets the **FastAPI backend** inside `backend/`
+
+- [Procfile](C:\Users\surya\Desktop\spoorthi_ai\Procfile)
+  Targets the **root Flask demo**
+
+- [requirements.txt](C:\Users\surya\Desktop\spoorthi_ai\requirements.txt)
+  Root Flask demo dependencies
+
+- [backend/requirements.txt](C:\Users\surya\Desktop\spoorthi_ai\backend\requirements.txt)
+  Main FastAPI backend dependencies
+
+So at the moment:
+- deploying the main product requires the `backend/` and `frontend/` paths
+- deploying the root Flask app uses the root Procfile/requirements
+
+**Notes About Current Behavior**
+
+- The chat UI no longer shows confidence badges or document/internet source pills.
+- The Next.js dev overlay has been disabled in config, but the primary app still runs in dev mode by default so edits reflect after refresh.
+- Live Server / “Go Live” is not the recommended way to use the primary app. Use `python backend/app/main.py` instead.
+- A smaller Flask demo still exists at the repo root, which is why the repository has both root-level and `backend/`/`frontend/` startup files.
+
+**Quick Test Questions**
+
+You can try:
+- `Where is Hackathon?`
+- `What are the event timings?`
+- `List all events`
+- `Where is Robotics Workshop?`
+- `How can I contact the organizers?`
+
+**Known Caveat**
+
+This repository has evolved in-place and now contains both:
+- a modern FastAPI + Next.js app
+- a simpler Flask demo app
+
+The README now reflects that honestly so startup and deployment are less confusing.

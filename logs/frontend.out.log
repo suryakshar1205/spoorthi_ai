@@ -1,0 +1,28 @@
+
+> spoorthi-ai-frontend@1.0.0 dev
+> next dev --hostname 127.0.0.1 --port 3000
+
+   ▲ Next.js 15.5.14
+   - Local:        http://127.0.0.1:3000
+   - Network:      http://127.0.0.1:3000
+   - Experiments (use with caution):
+     · optimizePackageImports
+
+ ✓ Starting...
+ ✓ Ready in 2s
+ ○ Compiling / ...
+ ✓ Compiled / in 1886ms (1419 modules)
+ GET / 200 in 2646ms
+ ○ Compiling /admin ...
+ ✓ Compiled /admin in 519ms (1439 modules)
+ GET /admin 200 in 687ms
+ GET / 200 in 42ms
+ GET /admin 200 in 33ms
+ GET / 200 in 31ms
+ GET /admin 200 in 375ms
+ GET / 200 in 63ms
+ GET /admin 200 in 28ms
+ GET /admin 200 in 28ms
+ GET /admin 200 in 36ms
+ GET /admin 200 in 34ms
+ GET / 200 in 29ms

@@ -252,9 +252,6 @@ export function AdminShell() {
               Live Ops
             </p>
             <h1 className="mt-2 text-4xl text-ink dark:text-white">Spoorthi Chatbot Admin Dashboard</h1>
-            <p className="mt-2 text-sm text-stone-600 dark:text-stone-300">
-              Upload documents, inject manual context, inspect knowledge coverage, and rebuild the FAISS index without restarting the service.
-            </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Link

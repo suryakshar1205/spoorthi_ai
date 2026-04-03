@@ -26,6 +26,11 @@ def route_predefined_query(query: str) -> str | None:
     if not normalized:
         return None
 
+    if not _has_fest_intent(normalized):
+        small_talk_response = _small_talk_response(normalized)
+        if small_talk_response:
+            return small_talk_response
+
     if _matches(normalized, "hackathon") and _matches_any(normalized, "where", "location", "venue"):
         return (
             "Hackathon Details:\n"
@@ -79,6 +84,62 @@ def route_predefined_query(query: str) -> str | None:
         )
 
     return None
+
+
+def _small_talk_response(normalized_query: str) -> str | None:
+    greeting_terms = {"hi", "hello", "hey", "hii", "good morning", "good evening", "good afternoon"}
+    gratitude_terms = {"thank you", "thanks", "thankyou"}
+    closing_terms = {"bye", "goodbye", "see you"}
+    checkin_terms = {"how are you", "how are u", "how r u", "what s up", "whats up", "who are you"}
+
+    if normalized_query in greeting_terms:
+        return (
+            "Hello! I am Spoorthi Chatbot.\n"
+            "I can help you with:\n"
+            "- Event timings\n"
+            "- Venue and location details\n"
+            "- Registration and participation info"
+        )
+    if any(term in normalized_query for term in checkin_terms):
+        return (
+            "Hello! I am doing well.\n"
+            "I am here to help with Spoorthi fest information like timings, venues, events, and registrations."
+        )
+    if any(term in normalized_query for term in gratitude_terms):
+        return "You are welcome. If you need fest details, I am here to help."
+    if any(term in normalized_query for term in closing_terms):
+        return "Glad to help. See you soon at Spoorthi."
+
+    words = normalized_query.split()
+    if len(words) <= 4 and any(word in {"hi", "hello", "hey"} for word in words):
+        return (
+            "Hi there! I can help with Spoorthi event schedules, locations, and registrations.\n"
+            "What would you like to know?"
+        )
+    return None
+
+
+def _has_fest_intent(normalized_query: str) -> bool:
+    fest_terms = {
+        "spoorthi",
+        "fest",
+        "event",
+        "events",
+        "hackathon",
+        "coding",
+        "contest",
+        "workshop",
+        "robotics",
+        "venue",
+        "location",
+        "timing",
+        "schedule",
+        "registration",
+        "organizer",
+        "coordinator",
+        "rules",
+    }
+    return any(term in normalized_query.split() for term in fest_terms)
 
 
 def _matches(normalized_query: str, phrase: str) -> bool:
