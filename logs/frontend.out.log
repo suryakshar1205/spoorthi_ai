@@ -9,7 +9,11 @@
      · optimizePackageImports
 
  ✓ Starting...
- ✓ Ready in 2.3s
+ ✓ Ready in 3.6s
  ○ Compiling / ...
- ✓ Compiled / in 2.2s (1419 modules)
- GET / 200 in 3159ms
+ ✓ Compiled / in 2.5s (1362 modules)
+ GET / 200 in 4026ms
+ ○ Compiling /admin ...
+ ✓ Compiled /admin in 1042ms (1439 modules)
+ GET /admin 200 in 1857ms
+ GET / 200 in 60ms

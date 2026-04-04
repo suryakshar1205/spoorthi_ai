@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Mic, MicOff } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { FormEvent, useEffect, useRef, useState } from "react";
@@ -264,12 +263,6 @@ export function ChatShell() {
             >
               New Chat
             </button>
-            <Link
-              href="/admin"
-              className="rounded-full border border-stone-300/70 bg-white/80 px-4 py-2 text-sm font-medium text-stone-900 transition hover:border-ocean hover:text-ocean dark:border-white/10 dark:bg-white/5 dark:text-stone-100"
-            >
-              Admin Console
-            </Link>
             <ThemeToggle />
           </div>
         </header>
