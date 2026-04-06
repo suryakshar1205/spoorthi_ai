@@ -106,6 +106,15 @@ class Settings:
                     "http://127.0.0.1:5500",
                 ],
             )
+        normalized_origins: list[str] = []
+        seen: set[str] = set()
+        for origin in self.allowed_origins:
+            cleaned = origin.strip().rstrip("/")
+            if not cleaned or cleaned in seen:
+                continue
+            seen.add(cleaned)
+            normalized_origins.append(cleaned)
+        self.allowed_origins = normalized_origins
 
     @property
     def current_model(self) -> str:

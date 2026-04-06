@@ -1,11 +1,12 @@
 import { AskResponse, KnowledgeDocument, StreamEvent } from "@/lib/types";
 
 
-const API_URL =
+const RAW_API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
   (typeof window !== "undefined"
     ? `${window.location.protocol}//${window.location.hostname}:8000`
     : "http://localhost:8000");
+const API_URL = RAW_API_URL.replace(/\/+$/, "");
 
 
 function extractErrorMessage(raw: string, fallback: string): string {
