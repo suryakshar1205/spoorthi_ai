@@ -31,7 +31,7 @@ export function AdminShell() {
   const { pushToast } = useToast();
 
   const [token, setToken] = useState("");
-  const [username, setUsername] = useState("admin");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
