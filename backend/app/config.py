@@ -13,10 +13,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 UPLOAD_DIR = DATA_DIR / "uploads"
 
-load_dotenv(BASE_DIR / ".env", override=True)
-load_dotenv(BASE_DIR / ".env.local", override=True)
-load_dotenv(APP_DIR / ".env", override=True)
-load_dotenv(APP_DIR / ".env.local", override=True)
+for env_path in (
+    APP_DIR / ".env.local",
+    APP_DIR / ".env",
+    BASE_DIR / ".env.local",
+    BASE_DIR / ".env",
+):
+    if env_path.exists():
+        # Real environment variables must win in deployment platforms like Render.
+        load_dotenv(env_path, override=False)
 
 
 def _get_env(name: str, default: str | None = None) -> str | None:
