@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from app.config import Settings
 from app.services.auth_service import AuthService
-from app.services.llm_service import LLMService, LocalProvider, OllamaProvider, OpenAIProvider
+from app.services.llm_service import LLMService, LocalProvider
 
 
 def test_auth_service_validates_credentials() -> None:
@@ -14,11 +14,13 @@ def test_auth_service_validates_credentials() -> None:
     assert service.verify_credentials("unknown", "secure-pass") is False
 
 
-def test_llm_service_switches_provider_from_config() -> None:
-    openai_service = LLMService(Settings(llm_provider="openai"))
-    ollama_service = LLMService(Settings(llm_provider="ollama"))
+def test_llm_service_always_uses_local_provider() -> None:
+    default_service = LLMService(Settings())
+    overridden_service = LLMService(Settings(llm_provider="remote"))
     local_service = LLMService(Settings(llm_provider="local"))
 
-    assert isinstance(openai_service.provider, OpenAIProvider)
-    assert isinstance(ollama_service.provider, OllamaProvider)
-    assert isinstance(local_service.provider, LocalProvider)
+    assert isinstance(default_service.local_provider, LocalProvider)
+    assert isinstance(overridden_service.local_provider, LocalProvider)
+    assert isinstance(local_service.local_provider, LocalProvider)
+    assert default_service.settings.llm_provider == "local"
+    assert overridden_service.settings.llm_provider == "local"

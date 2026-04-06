@@ -19,8 +19,6 @@ from app.utils.text import build_chunk_records
 @pytest.mark.asyncio
 async def test_rag_pipeline_validation_queries(tmp_path: Path) -> None:
     settings = Settings(
-        llm_provider="local",
-        local_fallback_enabled=True,
         use_internet_fallback=False,
         knowledge_dir=tmp_path / "data",
         upload_dir=tmp_path / "data" / "uploads",

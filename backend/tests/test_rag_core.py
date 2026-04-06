@@ -30,7 +30,6 @@ class DummySearchService(SearchService):
 @pytest.fixture()
 def settings(tmp_path: Path) -> Settings:
     return Settings(
-        llm_provider="ollama",
         knowledge_dir=tmp_path,
         upload_dir=tmp_path / "uploads",
         faiss_index_path=tmp_path / "knowledge.index",

@@ -11,7 +11,7 @@ The repository currently contains **two runnable app paths**:
    - Next.js frontend
    - live document indexing
    - admin console
-   - local/OpenAI/Ollama response providers
+   - local grounded response engine
 
 2. **Lightweight demo app**: root-level `main.py`
    This is a smaller Flask-based fallback/demo app that serves `templates/` + `static/` directly.
@@ -39,7 +39,7 @@ Backend:
 - FAISS-backed persistent knowledge index
 - admin auth with JWT + bcrypt
 - retriever + reranker pipeline
-- local/OpenAI/Ollama response providers
+- local grounded response engine
 - manual context injection and document upload
 
 Frontend:
@@ -133,12 +133,7 @@ npm install
 Use [backend/.env.example](C:\Users\surya\Desktop\spoorthi_ai\backend\.env.example) as the starting point.
 
 Important values:
-- `LLM_PROVIDER=local|openai|ollama`
-- `OPENAI_API_KEY`
-- `OPENAI_MODEL`
-- `OLLAMA_BASE_URL`
-- `OLLAMA_MODEL`
-- `LOCAL_FALLBACK_ENABLED=true`
+- `LOCAL_MODEL_NAME=local-context`
 - `JWT_SECRET`
 - `ADMIN_USERNAME`
 - `ADMIN_PASSWORD`
@@ -173,7 +168,7 @@ docker compose up --build
 ```
 
 The Docker Compose setup now starts:
-- the backend with `LLM_PROVIDER=local`
+- the backend with the local response engine
 - the frontend pointed at `http://localhost:8000`
 - persistent backend data from `backend/data`
 
@@ -219,9 +214,7 @@ For the current main product:
 - set `ALLOWED_ORIGINS` in the backend deployment to the final frontend URL
 
 Helpful backend envs for deployment:
-- `LLM_PROVIDER`
-- `OPENAI_API_KEY` if using OpenAI
-- `OLLAMA_BASE_URL` and `OLLAMA_MODEL` if using Ollama
+- `LOCAL_MODEL_NAME`
 - `JWT_SECRET`
 - `ADMIN_USERNAME`
 - `ADMIN_PASSWORD`

@@ -61,15 +61,11 @@ class Settings:
     api_prefix: str = _get_env("API_PREFIX", "") or ""
     allowed_origins: list[str] = None  # type: ignore[assignment]
 
-    llm_provider: str = _get_env("LLM_PROVIDER", "local") or "local"
-    openai_api_key: str | None = _get_env("OPENAI_API_KEY")
-    openai_model: str = _get_env("OPENAI_MODEL", "gpt-4o-mini") or "gpt-4o-mini"
-    ollama_base_url: str = _get_env("OLLAMA_BASE_URL", "http://localhost:11434") or "http://localhost:11434"
-    ollama_model: str = _get_env("OLLAMA_MODEL", "llama3.1") or "llama3.1"
-    local_fallback_enabled: bool = _get_bool("LOCAL_FALLBACK_ENABLED", True)
-
+    llm_provider: str = "local"
+    local_model_name: str = _get_env("LOCAL_MODEL_NAME", "local-context") or "local-context"
     temperature: float = _get_float("LLM_TEMPERATURE", 0.35)
     max_tokens: int = _get_int("LLM_MAX_TOKENS", 700)
+    response_stream_delay_ms: int = _get_int("RESPONSE_STREAM_DELAY_MS", 10)
     similarity_threshold: float = _get_float("SIMILARITY_THRESHOLD", 0.52)
     embedding_dimension: int = _get_int("EMBEDDING_DIMENSION", 512)
     chunk_size: int = _get_int("CHUNK_SIZE", 320)
@@ -96,6 +92,7 @@ class Settings:
     metadata_path: Path = DATA_DIR / "knowledge.json"
 
     def __post_init__(self) -> None:
+        self.llm_provider = "local"
         if self.allowed_origins is None:
             self.allowed_origins = _get_list(
                 "ALLOWED_ORIGINS",
@@ -109,11 +106,7 @@ class Settings:
 
     @property
     def current_model(self) -> str:
-        if self.llm_provider == "ollama":
-            return self.ollama_model
-        if self.llm_provider == "local":
-            return "local-context"
-        return self.openai_model
+        return self.local_model_name
 
     def ensure_directories(self) -> None:
         self.knowledge_dir.mkdir(parents=True, exist_ok=True)
