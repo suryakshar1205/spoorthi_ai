@@ -29,11 +29,16 @@ class VectorService:
 
     async def initialize(self) -> None:
         self.settings.ensure_directories()
+        self.records = []
+        self.index = faiss.IndexFlatIP(self.dimension)
+        self._records_dirty = False
+
+        if not self.settings.persist_runtime_knowledge:
+            return
+
         self.records = self._load_records()
         if self.settings.faiss_index_path.exists():
             self.index = faiss.read_index(str(self.settings.faiss_index_path))
-        else:
-            self.index = faiss.IndexFlatIP(self.dimension)
 
         if self.index.ntotal != len(self.records) or self._records_dirty:
             await self.rebuild_index()
@@ -48,21 +53,23 @@ class VectorService:
             self._persist()
 
     async def semantic_search(self, query: str, top_k: int) -> list[SearchMatch]:
-        if not self.records or self.index.ntotal == 0:
-            return []
+        async with self._lock:
+            if not self.records or self.index.ntotal == 0:
+                return []
 
-        limit = min(max(top_k, 1), len(self.records))
-        vector = self.embedding_service.embed_text(query).reshape(1, -1)
-        scores, positions = self.index.search(vector, limit)
+            limit = min(max(top_k, 1), len(self.records))
+            vector = self.embedding_service.embed_text(query).reshape(1, -1)
+            scores, positions = self.index.search(vector, limit)
+            records_snapshot = list(self.records)
 
         matches: list[SearchMatch] = []
         for raw_score, position in zip(scores[0], positions[0], strict=False):
-            if position < 0 or position >= len(self.records):
+            if position < 0 or position >= len(records_snapshot):
                 continue
             semantic_score = max(0.0, min(1.0, (float(raw_score) + 1.0) / 2.0))
             matches.append(
                 SearchMatch(
-                    chunk=self.records[position],
+                    chunk=records_snapshot[position],
                     score=semantic_score,
                     semantic_score=semantic_score,
                     quality_score=1.0,
@@ -115,12 +122,16 @@ class VectorService:
         return [record for record in self.records if record.document_id == document_id]
 
     def _persist(self) -> None:
+        if not self.settings.persist_runtime_knowledge:
+            return
         self.settings.ensure_directories()
         faiss.write_index(self.index, str(self.settings.faiss_index_path))
         payload = [record.to_dict() for record in self.records]
         self.settings.metadata_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     def _load_records(self) -> list[ChunkRecord]:
+        if not self.settings.persist_runtime_knowledge:
+            return []
         if not self.settings.metadata_path.exists():
             return []
 

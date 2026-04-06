@@ -11,7 +11,7 @@ import sys
 import threading
 import time
 from typing import TextIO
-from uuid import uuid4
+from uuid import NAMESPACE_URL, uuid5
 import webbrowser
 
 if __package__ in {None, ""}:
@@ -35,6 +35,7 @@ from app.services.reranker import RerankerService
 from app.services.retriever import RetrieverService
 from app.services.search_service import SearchService
 from app.services.vector_service import VectorService
+from app.utils.document import extract_text_from_path
 from app.utils.text import build_chunk_records
 
 
@@ -43,11 +44,6 @@ BACKEND_DIR = APP_DIR.parent
 PROJECT_ROOT = BACKEND_DIR.parent if (BACKEND_DIR.parent / "frontend").exists() else BACKEND_DIR
 FRONTEND_DIR = PROJECT_ROOT / "frontend"
 LOG_DIR = PROJECT_ROOT / "logs"
-SAMPLE_CONTEXT_CANDIDATES = [
-    BACKEND_DIR / "sample_data" / "spoorthi_test_context.txt",
-    BACKEND_DIR / "sample_data" / "spoorthi_context.txt",
-    BACKEND_DIR / "sample_data" / "spporthi_context.txt",
-]
 FRONTEND_HOST = os.getenv("FRONTEND_HOST", "127.0.0.1")
 FRONTEND_PORT = int(os.getenv("FRONTEND_PORT", "3000"))
 BACKEND_HOST = os.getenv("BACKEND_HOST", "127.0.0.1")
@@ -218,31 +214,58 @@ def _open_frontend_in_browser() -> None:
     threading.Thread(target=_wait_and_open, daemon=True).start()
 
 
-async def _seed_sample_context_if_empty(settings, vector_service: VectorService) -> None:
-    if vector_service.records:
-        return
-    sample_path = next((path for path in SAMPLE_CONTEXT_CANDIDATES if path.exists()), None)
-    if sample_path is None:
+async def _load_bundled_knowledge(settings, vector_service: VectorService) -> None:
+    bundled_paths = settings.iter_bundled_knowledge_files()
+    if not bundled_paths:
         return
 
-    text = sample_path.read_text(encoding="utf-8").strip()
-    if not text:
-        return
+    existing_bundled_paths = {
+        str(record.metadata.get("bundled_path", "")).strip()
+        for record in vector_service.records
+        if record.metadata.get("bundled") == "true"
+    }
 
-    chunks = build_chunk_records(
-        document_id=str(uuid4()),
-        file_name=sample_path.name,
-        source_type=KnowledgeSource.DOCUMENT.value,
-        text=text,
-        chunk_size=settings.chunk_size,
-        overlap=settings.chunk_overlap,
-        metadata={"seeded": "true", "file_path": str(sample_path)},
-    )
-    if not chunks:
-        return
+    loaded_count = 0
+    for bundled_path in bundled_paths:
+        relative_path = bundled_path.relative_to(settings.bundled_knowledge_dir).as_posix()
+        if relative_path in existing_bundled_paths:
+            continue
 
-    await vector_service.add_chunks(chunks)
-    print(f"[Spoorthi Chatbot] Seeded sample context from {sample_path}")
+        try:
+            text = extract_text_from_path(bundled_path).strip()
+        except Exception:
+            logging.getLogger(__name__).exception(
+                "Failed to load bundled knowledge file %s", bundled_path
+            )
+            continue
+
+        if not text:
+            continue
+
+        chunks = build_chunk_records(
+            document_id=str(uuid5(NAMESPACE_URL, relative_path)),
+            file_name=bundled_path.name,
+            source_type=KnowledgeSource.DOCUMENT.value,
+            text=text,
+            chunk_size=settings.chunk_size,
+            overlap=settings.chunk_overlap,
+            metadata={
+                "bundled": "true",
+                "bundled_path": relative_path,
+                "file_path": str(bundled_path),
+            },
+        )
+        if not chunks:
+            continue
+
+        await vector_service.add_chunks(chunks)
+        loaded_count += 1
+
+    if loaded_count:
+        print(
+            f"[Spoorthi Chatbot] Loaded {loaded_count} bundled knowledge file(s) from "
+            f"{settings.bundled_knowledge_dir}"
+        )
 
 
 atexit.register(_stop_frontend)
@@ -254,7 +277,7 @@ async def lifespan(app: FastAPI):
     embedding_service = EmbeddingService(settings)
     vector_service = VectorService(settings, embedding_service=embedding_service)
     await vector_service.initialize()
-    await _seed_sample_context_if_empty(settings, vector_service)
+    await _load_bundled_knowledge(settings, vector_service)
 
     auth_service = AuthService(settings)
     search_service = SearchService(settings)

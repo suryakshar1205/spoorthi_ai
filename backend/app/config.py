@@ -78,6 +78,8 @@ class Settings:
     internet_search_provider: str = _get_env("INTERNET_SEARCH_PROVIDER", "duckduckgo") or "duckduckgo"
     serpapi_api_key: str | None = _get_env("SERPAPI_API_KEY")
     use_internet_fallback: bool = _get_bool("USE_INTERNET_FALLBACK", False)
+    load_repo_knowledge: bool = _get_bool("LOAD_REPO_KNOWLEDGE", True)
+    persist_runtime_knowledge: bool = _get_bool("PERSIST_RUNTIME_KNOWLEDGE", False)
 
     jwt_secret: str = _get_env("JWT_SECRET", "change-me-in-production") or "change-me-in-production"
     jwt_algorithm: str = _get_env("JWT_ALGORITHM", "HS256") or "HS256"
@@ -90,6 +92,7 @@ class Settings:
     upload_dir: Path = UPLOAD_DIR
     faiss_index_path: Path = DATA_DIR / "knowledge.index"
     metadata_path: Path = DATA_DIR / "knowledge.json"
+    bundled_knowledge_dir: Path = BASE_DIR / "sample_data"
 
     def __post_init__(self) -> None:
         self.llm_provider = "local"
@@ -111,6 +114,18 @@ class Settings:
     def ensure_directories(self) -> None:
         self.knowledge_dir.mkdir(parents=True, exist_ok=True)
         self.upload_dir.mkdir(parents=True, exist_ok=True)
+
+    def iter_bundled_knowledge_files(self) -> list[Path]:
+        if not self.load_repo_knowledge or not self.bundled_knowledge_dir.exists():
+            return []
+
+        supported_suffixes = {".txt", ".md", ".pdf"}
+        files = [
+            path
+            for path in self.bundled_knowledge_dir.rglob("*")
+            if path.is_file() and path.suffix.lower() in supported_suffixes
+        ]
+        return sorted(files, key=lambda path: path.name.lower())
 
 
 @lru_cache(maxsize=1)

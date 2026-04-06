@@ -25,6 +25,16 @@ def validate_upload(filename: str) -> str:
 async def extract_text_from_upload(upload: UploadFile) -> str:
     extension = validate_upload(upload.filename or "")
     content = await upload.read()
+    return _extract_text_from_content(content, extension)
+
+
+def extract_text_from_path(path: Path) -> str:
+    extension = validate_upload(path.name)
+    content = path.read_bytes()
+    return _extract_text_from_content(content, extension)
+
+
+def _extract_text_from_content(content: bytes, extension: str) -> str:
 
     if not content:
         raise HTTPException(

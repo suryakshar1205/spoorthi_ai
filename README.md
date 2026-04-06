@@ -6,7 +6,7 @@ Spoorthi Chatbot is a deployable fest-assistant web app for answering questions 
 
 Backend:
 - FastAPI
-- FAISS-backed persistent knowledge index
+- FAISS-backed in-memory index rebuilt at startup
 - JWT admin authentication
 - semantic chunking + retrieval + reranking
 - local grounded response engine
@@ -66,6 +66,8 @@ npm install
 
 Important values:
 - `LOCAL_MODEL_NAME=local-context`
+- `LOAD_REPO_KNOWLEDGE=true`
+- `PERSIST_RUNTIME_KNOWLEDGE=false`
 - `JWT_SECRET`
 - `ADMIN_USERNAME`
 - `ADMIN_PASSWORD`
@@ -98,13 +100,19 @@ docker compose up --build
 This starts:
 - backend on `8000`
 - frontend on `3000`
-- persistent backend data from `backend/data`
+- runtime backend data from `backend/data`
 
 ## Deployment
 
 Recommended setup:
 - deploy [backend](C:\Users\surya\Desktop\spoorthi_ai\backend) to Render
 - deploy [frontend](C:\Users\surya\Desktop\spoorthi_ai\frontend) to Vercel
+
+Free-tier architecture:
+- permanent bundled fest knowledge lives in `backend/sample_data`
+- the backend rebuilds the FAISS index from those repo files on startup
+- admin uploads and manual additions work during the live service session
+- runtime admin changes are temporary on Render Free and can be lost after restart or redeploy
 
 ### Render backend
 
@@ -114,10 +122,12 @@ Configured:
 - root directory: `backend`
 - start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - health check path: `/health`
-- persistent disk mount path: `/opt/render/project/src/backend/data`
+- free-tier friendly startup rebuild from `backend/sample_data`
 
 Important backend envs:
 - `LOCAL_MODEL_NAME`
+- `LOAD_REPO_KNOWLEDGE`
+- `PERSIST_RUNTIME_KNOWLEDGE`
 - `JWT_SECRET`
 - `ADMIN_USERNAME`
 - `ADMIN_PASSWORD`
@@ -143,6 +153,7 @@ Then set backend `ALLOWED_ORIGINS` to your Vercel domain.
 - add manual context instantly
 - delete indexed documents
 - rebuild the index from the admin panel
+- permanent repo-backed knowledge bootstrapping from `backend/sample_data`
 - friendly small-talk handling
 - direct answers for common fest questions
 - grounded fallback:

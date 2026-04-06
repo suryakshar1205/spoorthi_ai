@@ -6,13 +6,13 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
-    disk:
-      name: knowledge-data
-      mountPath: /opt/render/project/src/backend/data
-      sizeGB: 5
     envVars:
       - key: LOCAL_MODEL_NAME
         value: local-context
+      - key: LOAD_REPO_KNOWLEDGE
+        value: "true"
+      - key: PERSIST_RUNTIME_KNOWLEDGE
+        value: "false"
       - key: JWT_SECRET
         sync: false
       - key: ALLOWED_ORIGINS
