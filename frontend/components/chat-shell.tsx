@@ -2,7 +2,7 @@
 
 import { Mic, MicOff } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 
 import { askQuestion, streamQuestion } from "@/lib/api";
 import { clearChatHistory } from "@/lib/storage";
@@ -222,6 +222,15 @@ export function ChatShell() {
     await submitQuestion(input);
   };
 
+  const handleInputKeyDown = async (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) {
+      return;
+    }
+
+    event.preventDefault();
+    await submitQuestion(input);
+  };
+
   const resetChat = () => {
     setMessages([welcomeMessage]);
     setSessionId(crypto.randomUUID());
@@ -353,6 +362,9 @@ export function ChatShell() {
                 <textarea
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    void handleInputKeyDown(event);
+                  }}
                   placeholder="Ask about schedules, venues, registrations, or event details..."
                   className="min-h-[96px] w-full resize-none bg-transparent px-2 py-2 text-sm text-stone-900 outline-none placeholder:text-stone-400 dark:text-stone-100 dark:placeholder:text-stone-500"
                 />
