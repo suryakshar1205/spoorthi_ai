@@ -5,7 +5,7 @@ python-jose==3.5.0
 bcrypt==4.3.0
 python-multipart==0.0.20
 python-dotenv==1.1.1
-faiss-cpu==1.11.0.post1
+faiss-cpu==1.13.2
 numpy==2.3.1
 duckduckgo-search==8.1.1
 pypdf==5.8.0
