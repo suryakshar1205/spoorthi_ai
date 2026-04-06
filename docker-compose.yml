@@ -6,8 +6,8 @@ services:
       context: ./backend
     environment:
       APP_NAME: Spoorthi Chatbot API
-      LLM_PROVIDER: local
-      LOCAL_FALLBACK_ENABLED: "true"
+      LOCAL_MODEL_NAME: local-context
+      RESPONSE_STREAM_DELAY_MS: 10
       ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
       JWT_SECRET: change-me-in-production
       ADMIN_USERNAME: admin
