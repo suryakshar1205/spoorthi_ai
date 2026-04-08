@@ -19,6 +19,11 @@ HEADING_RE = re.compile(r"^(#{1,6}\s+.+|[A-Z][A-Za-z0-9 /&()'_-]{2,}:)$")
 NON_ALNUM_RE = re.compile(r"[^a-z0-9\s]")
 
 QUERY_REPLACEMENTS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (re.compile(r"\bwaht\b", re.IGNORECASE), " what "),
+    (re.compile(r"\bwht\b", re.IGNORECASE), " what "),
+    (re.compile(r"\bhepp?ening\b", re.IGNORECASE), " happening "),
+    (re.compile(r"\bhapen+ing\b", re.IGNORECASE), " happening "),
+    (re.compile(r"\bevnts?\b", re.IGNORECASE), " events "),
     (re.compile(r"\bco\s*[- ]?\s*ord(?:\s*[- ]?\s*inator)?s?\b", re.IGNORECASE), " coordinator "),
     (re.compile(r"\bcoords?\b", re.IGNORECASE), " coordinator "),
     (re.compile(r"\bfacult\b", re.IGNORECASE), " faculty "),

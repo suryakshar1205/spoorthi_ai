@@ -129,7 +129,10 @@ class RetrieverService:
             intents.add("contact")
         if any(term in query_text for term in ("rule", "rules", "allowed", "late entry", "team", "members")):
             intents.add("rules")
-        if any(term in query_text for term in ("workshop", "presentation", "expo", "challenge", "quiz", "hackathon", "coding contest", "beginners")):
+        if any(
+            term in query_text
+            for term in ("workshop", "presentation", "expo", "challenge", "quiz", "hackathon", "coding contest", "beginners", "event", "events", "activities")
+        ):
             intents.add("events")
         if any(term in query_text for term in ("history", "legacy", "about", "overview", "what is")):
             intents.add("overview")

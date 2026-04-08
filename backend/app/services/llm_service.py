@@ -144,19 +144,7 @@ class LocalProvider:
             if answer:
                 return answer
 
-        if any(
-            term in query_text
-            for term in (
-                "list all events",
-                "available events",
-                "what are the events",
-                "which events",
-                "what events are happening",
-                "events are happening",
-                "what events",
-                "happening today",
-            )
-        ):
+        if self._is_broad_event_query(query_text):
             answer = self._answer_event_list(schedule_items, event_cards, sentences)
             if answer:
                 return answer
@@ -251,6 +239,50 @@ class LocalProvider:
             value = normalize_text(match.group("value"))
             if label and value and label not in fields:
                 fields[label] = value
+
+        for block in [part.strip() for part in re.split(r"\n{2,}", text) if part.strip()]:
+            lines = [line.strip() for line in block.splitlines() if line.strip()]
+            if len(lines) < 2:
+                continue
+
+            title = self._clean_report_title(lines[0]).lower()
+            block_values: dict[str, str] = {}
+            nested_title: str | None = None
+            nested_values: dict[str, str] = {}
+
+            def flush_nested() -> None:
+                if not nested_title:
+                    return
+                if nested_title == "faculty coordinator" and nested_values.get("name"):
+                    fields.setdefault("faculty coordinator", nested_values["name"])
+                elif nested_title == "student coordinator team" and nested_values.get("names"):
+                    fields.setdefault("student coordinator", nested_values["names"])
+                elif nested_title == "finance team" and nested_values.get("names"):
+                    fields.setdefault("finance team", nested_values["names"])
+
+            for line in lines[1:]:
+                if ":" not in line:
+                    flush_nested()
+                    nested_title = self._clean_report_title(line).lower()
+                    nested_values = {}
+                    continue
+                key, value = line.split(":", 1)
+                normalized_key = normalize_text(key).lower()
+                normalized_value = normalize_text(value)
+                if nested_title:
+                    nested_values[normalized_key] = normalized_value
+                else:
+                    block_values[normalized_key] = normalized_value
+
+            flush_nested()
+
+            if title == "faculty coordinator" and block_values.get("name"):
+                fields.setdefault("faculty coordinator", block_values["name"])
+            elif title == "student coordinator team" and block_values.get("names"):
+                fields.setdefault("student coordinator", block_values["names"])
+            elif title == "finance team" and block_values.get("names"):
+                fields.setdefault("finance team", block_values["names"])
+
         return fields
 
     def _extract_event_cards(self, text: str) -> list[EventCard]:
@@ -513,6 +545,24 @@ class LocalProvider:
                 break
 
         return "\n".join(fallback_lines) if len(fallback_lines) > 1 else None
+
+    def _is_broad_event_query(self, query_text: str) -> bool:
+        explicit_phrases = (
+            "list all events",
+            "available events",
+            "what are the events",
+            "which events",
+            "what events are happening",
+            "events are happening",
+            "what events",
+            "happening today",
+        )
+        if any(term in query_text for term in explicit_phrases):
+            return True
+
+        has_event_word = any(term in query_text for term in ("event", "events", "fest", "activities", "programs"))
+        has_listing_word = any(term in query_text for term in ("happening", "available", "list", "show", "tell", "ongoing"))
+        return has_event_word and has_listing_word
 
     def _answer_schedule(
         self,

@@ -1,7 +1,3 @@
-# Spoorthi History and Legacy
-
-This file is a clean, retrieval-friendly context source for answering broad questions about Spoorthi.
-
 ## Identity
 
 - Spoorthi is the annual symposium organized by the Department of Electronics and Communication Engineering at JNTUH College of Engineering, Hyderabad.
@@ -19,11 +15,6 @@ This file is a clean, retrieval-friendly context source for answering broad ques
 - Spoorthi is commonly traced back to the mid-2000s, with 2004 frequently cited as its starting point as a technical fest.
 - Around 2009, it expanded from a purely technical fest into a techno-cultural symposium.
 - Over time, it developed into a larger department flagship event with both academic and cultural programming.
-
-## Academic Year Structure
-
-- Phase 1: Pre-fest workshops and seminars, usually conducted from September to February.
-- Phase 2: Main symposium days, usually held in March or April.
 
 ## Sample Historical Timeline
 

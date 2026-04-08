@@ -56,6 +56,7 @@ async def test_rag_pipeline_validation_queries(tmp_path: Path) -> None:
     faculty_coord = await rag_service.answer_query("Who is facult co ord?", session_id="test-session")
     student_coord = await rag_service.answer_query("Who are the student co ords?", session_id="test-session")
     broad_events = await rag_service.answer_query("What events are happening?", session_id="test-session")
+    broad_events_typo = await rag_service.answer_query("Waht evnts are heppening in fest?", session_id="test-session")
     workshops = await rag_service.answer_query("Tell me about the workshops", session_id="test-session")
     overview = await rag_service.answer_query("What is Spoorthi?", session_id="test-session")
     unknown = await rag_service.answer_query("What is the hostel bus route for visitors?", session_id="test-session")
@@ -63,6 +64,7 @@ async def test_rag_pipeline_validation_queries(tmp_path: Path) -> None:
     assert "Dr. Anitha Sheela Kancharla" in faculty_coord.answer
     assert "Naveen" in student_coord.answer or "Nikitha" in student_coord.answer
     assert "PCB Workshop" in broad_events.answer or "Hackathon" in broad_events.answer
+    assert "PCB Workshop" in broad_events_typo.answer or "Hackathon" in broad_events_typo.answer
     assert "PCB Workshop" in workshops.answer or "AI & IoT Workshop" in workshops.answer
     assert "Spoorthi" in overview.answer and "JNTUH" in overview.answer
     assert "Please contact the organizers" in unknown.answer

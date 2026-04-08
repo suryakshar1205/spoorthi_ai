@@ -198,7 +198,7 @@ class RAGService:
         )
 
     async def _lookup_contact_lines(self) -> list[str]:
-        contact_query = "organizer contact coordinator email phone help desk"
+        contact_query = "faculty coordinator student coordinator organizer contact email phone help desk"
         retrieved = await self.retriever.retrieve(contact_query, top_k=max(5, self.settings.top_k))
         selected = self.reranker.rerank(contact_query, retrieved, top_n=self.settings.rerank_top_n)
         if not selected:
@@ -227,6 +227,35 @@ class RAGService:
         cleaned_text = re.sub(r"\n{3,}", "\n\n", cleaned_text)
 
         prioritized: list[str] = []
+
+        for block in [part.strip() for part in re.split(r"\n{2,}", cleaned_text) if part.strip()]:
+            lines = [line.strip() for line in block.splitlines() if line.strip()]
+            if len(lines) < 2:
+                continue
+
+            nested_title: str | None = None
+            nested_values: dict[str, str] = {}
+
+            def flush_nested() -> None:
+                if nested_title == "faculty coordinator" and nested_values.get("name"):
+                    prioritized.append(f"Faculty Coordinator: {self._normalize_contact_value(nested_values['name'])}")
+                elif nested_title == "student coordinator team" and nested_values.get("names"):
+                    prioritized.append(f"Student Coordinator: {self._normalize_contact_value(nested_values['names'])}")
+
+            for line in lines:
+                if ":" not in line:
+                    flush_nested()
+                    nested_title = self._normalize_contact_value(line).lower()
+                    nested_values = {}
+                    continue
+
+                key, value = line.split(":", 1)
+                normalized_key = self._normalize_contact_value(key).lower()
+                normalized_value = self._normalize_contact_value(value)
+                if nested_title:
+                    nested_values[normalized_key] = normalized_value
+
+            flush_nested()
 
         for match in ROLE_CONTACT_RE.finditer(cleaned_text):
             role = self._normalize_label(match.group("role"))

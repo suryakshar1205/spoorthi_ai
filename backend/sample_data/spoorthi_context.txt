@@ -1,52 +1,132 @@
-SPOORTHI FEST 2026 – COMPLETE COMPREHENSIVE REPORT
+SPOORTHI FEST 2026 - COMPLETE COMPREHENSIVE REPORT
+
 1. Institutional Overview & Event Identity
-Spoorthi Fest is the annual techno-cultural symposium conducted by the Department of Electronics and Communication Engineering (ECE) at Jawaharlal Nehru Technological University Hyderabad (JNTUH).
-The term 'Spoorthi' means inspiration, reflecting the goal of encouraging innovation, creativity, and collaboration among students.
-The ECE department, established in 1973, supports over 1000 students and is known for academic excellence and technical exposure.
-Started in 2004 as a technical fest, Spoorthi evolved into a techno-cultural event in 2009 and continues as a flagship event.
+- Spoorthi Fest is the annual techno-cultural symposium conducted by the Department of Electronics and Communication Engineering (ECE) at Jawaharlal Nehru Technological University Hyderabad (JNTUH).
+- The name "Spoorthi" means inspiration and reflects the goal of encouraging innovation, creativity, and collaboration among students.
+- The ECE department at JNTUH is known for academic excellence, technical exposure, and a strong student community.
+- Spoorthi began around 2004 as a technical fest and later expanded into a broader techno-cultural event around 2009.
+- The fest brings together students from different colleges to learn, compete, collaborate, and enjoy a mix of technical and cultural experiences.
 
 2. History & Evolution
-Spoorthi has grown significantly over the years with increasing participation and event diversity.
-Earlier editions included paper presentations, project expos, quizzes, workshops, and cultural activities.
-Recent years introduced hackathons, industry collaborations, and online events.
+- Spoorthi has grown steadily in scale and popularity over the years.
+- Earlier editions included paper presentations, project expos, quizzes, workshops, and cultural activities.
+- Later editions introduced hackathons, industry collaborations, guest sessions, and online competitions.
+- Editions such as Spoorthi 2013 and Spoorthi 2014 were held over two days in March and attracted students from engineering colleges across the state.
+- Spoorthi is widely regarded as a flagship student-facing event of the JNTUH ECE Department.
 
 3. Organization & Management
-The fest is organized by faculty and students collaboratively, giving students real-world experience in leadership and event management.
+- Spoorthi is organized by the ECE Department of JNTUH at its main engineering college campus.
+- The fest is conducted through the combined efforts of faculty members and student teams.
+- Students actively take responsibility for planning, coordination, execution, finance, and on-ground management.
+- The collaborative model gives students practical exposure to teamwork, leadership, communication, and event management.
 
 4. Leadership & Coordinators
-Faculty Coordinator: Dr. Anitha Sheela Kancharla (Professor & Director UIIC)
-Student Coordinators: Naveen, Nikitha, Aditya Singh, Yashashwini
-Finance Team: Adithya Varma, Eshwar
+Faculty Coordinator
+Name: Dr. Anitha Sheela Kancharla
+Role: Professor, ECE Department
+Additional Responsibility: Director, University Industry Interaction Centre (UIIC)
+Focus Areas: Signal Processing, Artificial Intelligence, Machine Learning, Deep Learning, Communications
+
+Student Coordinator Team
+Names: Naveen, Nikitha, Aditya Singh, Yashashwini
+Responsibility: Core student coordination, event execution, participant support, and on-ground management
+
+Finance Team
+Names: Adithya Varma, Eshwar
+Responsibility: Budgeting, expenses, and fund management
 
 5. Workshops
-PCB Workshop (March 16–17): Focused on schematic design and PCB fabrication. Coordinators: Yamini, Rajanna, Srinath, Tanveer.
-AI & IoT Workshop: Covered image processing using MATLAB and IoT systems with industry experts.
+
+PCB Workshop
+Dates: March 16-17
+Duration: 2 days
+Focus: PCB design, schematic creation, layout design, and fabrication
+Coordinators: Yamini, Rajanna, Srinath, Tanveer
+Outcome: Hands-on technical learning in circuit design and fabrication
+
+AI and IoT Workshop
+Duration: 2 days
+Day 1: AI-based image processing using MATLAB
+Day 2: Internet of Things (IoT) hands-on workshop
+Expert Support: MathWorks speakers
+Outcome: Practical exposure to emerging technologies and real-world applications
 
 6. Hackathon
-A 2-day innovation event where students built solutions to real-world problems.
-Coordinators: Aditya, Naveen, Eswar, Veda, Nikhitha, Phaneendra, Vinay.
+
+Hackathon
+Duration: 2 days
+Focus: Solving real-world problems through teamwork, prototyping, and innovation
+Skills Highlighted: Problem solving, teamwork, time management, technical creativity
+Coordinators: Aditya, Naveen, Eswar, Veda, Nikhitha, Phaneendra, Vinay
 
 7. Promotional Activities
-Flashmob at Sarath City Capital Mall coordinated by Adithya Singh, Greeshmitha, Zoyan, Lasya.
+
+Flashmob
+Location: Sarath City Capital Mall
+Purpose: Promote the fest in a fun and engaging way
+Participants: Students from 1st year to 4th year
+Coordinators: Adithya Singh, Greeshmitha, Zoyan, Lasya
 
 8. Experience Zones
-Art Room: Managed by Veda, Akanksha, Rishikesh, Sindhuja.
-Tech Room: Managed by Surya, Srinidhi, Meghana, Neshitha, Sainag.
 
-9. Faculty Team
-Includes senior professors and assistant professors contributing to academic and administrative excellence.
+Art Room
+Purpose: Decorations, paintings, themes, and visual design for the department during the fest
+Coordinators: Veda, Akanksha, Rishikesh, Sindhuja
 
-10. Sponsors & Partnerships
-ECE Alumni, ICICI Bank, IEEE SB JNTUH, OHM Institute, MathWorks, Physitech Electronics, BrainOVision Solutions Pvt. Ltd.
+Tech Room
+Purpose: Technical games, electronics-based activities, working models, and project demonstrations
+Coordinators: Surya, Srinidhi, Meghana, Neshitha, Sainag
 
-11. Technical Events & Event Heads
-Tech Treasure Hunt – Coordinators: Bhavana, Gagan, Sonal, Mahesh
-IDEATHON – Coordinators: Shashank, Akshay, Divya, Anuhya
-Code Clutch – Coordinators: Jithendra, Sharan, Sowmya Sri, Sravanthi
-Logic Combat – Coordinators: Suraj, Srujith, Bhargavi, Rajeswari
-Tech Quiz – Coordinators: Hrushikesh Reddy, Vaishnav, Ravali Sri, Harika
-Proto Circuit – Coordinators: Swetha, Abhinikshith, Navya Sri, Mani Vivek
-Posteriza – Coordinators: Maheshwar, Pavan, Mounika, Sadvi
+9. Key Faculty Team
+- Dr. T. Madhavi Kumari - Professor and Head of Department, ECE
+- Dr. P. Chandrasekhar Reddy - Senior Professor
+- Dr. Makkena Madhavi Latha - Senior Professor and Director, Innovative Technologies
+- Dr. M. Asha Rani - Senior Professor and Founder Director, JNTUH TBI
+- Dr. T. Satya Savithri - Professor and Director, R&D Cell
+- Dr. Anitha Sheela Kancharla - Professor and Director, UIIC
+- Dr. A. Rajani - Professor
+
+10. Sponsors & Support Partners
+- ECE Alumni - alumni support and encouragement for department initiatives
+- ICICI Bank - financial support
+- IEEE Student Branch JNTUH - funding and technical guidance
+- OHM Institute - institutional support
+- MathWorks - workshop support, tools, and expert sessions
+- Physitech Electronics - workshop support and technical resources
+- BrainOVision Solutions Pvt. Ltd. - hackathon partner, problem statements, mentoring, and industry exposure
+
+11. Technical Event Highlights
+
+Tech Treasure Hunt
+Description: A technical treasure hunt that combines clues, teamwork, and problem solving
+Coordinators: Bhavana, Gagan, Sonal, Mahesh
+
+IDEATHON
+Description: An innovation-focused event where students present ideas and solutions to real-world challenges
+Coordinators: Shashank, Akshay, Divya, Anuhya
+
+Code Clutch
+Description: A coding event that focuses on programming skill, logical thinking, and problem solving
+Coordinators: Jithendra, Sharan, Sowmya Sri, Sravanthi
+
+Logic Combat
+Description: An event centered on analytical reasoning and challenging logic-based problems
+Coordinators: Suraj, Srujith, Bhargavi, Rajeswari
+
+Tech Quiz
+Description: A technical quiz covering multiple engineering and technology domains
+Coordinators: Hrushikesh Reddy, Vaishnav, Ravali Sri, Harika
+
+Proto Circuit
+Description: A circuit-based technical event encouraging practical electronics involvement
+Coordinators: Swetha, Abhinikshith, Navya Sri, Mani Vivek
+
+Posteriza
+Description: A creative poster presentation event for ideas, concepts, and research showcases
+Coordinators: Maheshwar, Pavan, Mounika, Sadvi
 
 12. Legacy & Social Impact
-Spoorthi has a legacy of 22+ years and includes initiatives like food donation drives and road safety awareness programs.
+- Spoorthi has a legacy of more than 20 years.
+- The fest combines technical learning, creativity, teamwork, and student engagement.
+- It has also included socially meaningful initiatives such as food donation drives and road safety awareness activities.
+- Spoorthi continues to inspire students to explore both technical and creative talents.
