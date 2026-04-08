@@ -8,10 +8,10 @@ from app.utils.text import normalize_query_text
 FALLBACK_ANSWER = "I don't have that information. Please contact the organizers."
 
 STARTER_QUESTIONS = (
-    "Where is the AI Workshop happening?",
-    "What are the event timings today?",
-    "List all events in the symposium",
-    "Who are the coordinators of Spoorthi?",
+    "What is Spoorthi Fest?",
+    "Who is the coordinator of Spoorthi Fest?",
+    "What workshops are conducted in Spoorthi?",
+    "Who are the sponsors of Spoorthi Fest?",
 )
 
 

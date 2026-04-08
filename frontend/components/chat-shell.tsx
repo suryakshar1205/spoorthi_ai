@@ -37,30 +37,73 @@ interface SpeechRecognitionEventLike {
 
 const quickQuestionGroups = [
   {
-    label: "Schedule and Venues",
+    label: "About Spoorthi Fest",
     questions: [
-      "Where is the AI Workshop happening?",
-      "Where is the registration desk?",
-      "Where is the Paper Presentation Session?",
-      "Where will the Prize Distribution happen?"
+      "What is Spoorthi Fest?",
+      "Where is Spoorthi Fest conducted?",
+      "What type of events are there in Spoorthi?",
+      "Why should I participate in Spoorthi Fest?",
+      "How is Spoorthi different from other college fests?"
     ]
   },
   {
-    label: "Timings and Rules",
+    label: "Organization & Team",
     questions: [
-      "What are the event timings today?",
-      "What time does the AI Workshop start?",
-      "When does spot registration close?",
-      "What are the registration rules?"
+      "Who is the coordinator of Spoorthi Fest?",
+      "Who are the student coordinators?",
+      "How is Spoorthi Fest organized?",
+      "What roles do students play in organizing the fest?",
+      "How does organizing Spoorthi help students gain experience?"
     ]
   },
   {
-    label: "Overview and Contacts",
+    label: "Workshops & Hackathon",
     questions: [
-      "List all events in the symposium",
-      "Who are the coordinators of Spoorthi?",
-      "Give me a quick overview of Spoorthi",
-      "What can a beginner attend?"
+      "What workshops are conducted in Spoorthi?",
+      "What is the PCB workshop about?",
+      "What is the AI and IoT workshop?",
+      "What is the hackathon and how does it work?",
+      "What skills can I gain from workshops and hackathons?"
+    ]
+  },
+  {
+    label: "Activities & Experience",
+    questions: [
+      "What is the flashmob about?",
+      "What happens in the Tech Room?",
+      "What is the Art Room?",
+      "What fun activities are there in Spoorthi?",
+      "What can I explore apart from technical events?"
+    ]
+  },
+  {
+    label: "Technical Events",
+    questions: [
+      "What are the main technical events in Spoorthi?",
+      "What is Code Clutch?",
+      "What is IDEATHON?",
+      "What is Tech Treasure Hunt?",
+      "Which events are best for beginners?"
+    ]
+  },
+  {
+    label: "Legacy & Impact",
+    questions: [
+      "How long has Spoorthi Fest been conducted?",
+      "Why is Spoorthi considered a flagship event?",
+      "What impact does Spoorthi have on students?",
+      "What social activities are part of Spoorthi?",
+      "Why do students participate in Spoorthi every year?"
+    ]
+  },
+  {
+    label: "Sponsors & Support",
+    questions: [
+      "Who are the sponsors of Spoorthi Fest?",
+      "How do sponsors support the fest?",
+      "What is the role of IEEE in Spoorthi?",
+      "How does industry collaboration help students?",
+      "Which companies are involved in the fest?"
     ]
   }
 ];
