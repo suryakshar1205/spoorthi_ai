@@ -1,91 +1,52 @@
-# Spoorthi Fest: Comprehensive Context & Master Schedule
-**Official Reference Document for Spoorthi Chatbot**
+SPOORTHI FEST 2026 – COMPLETE COMPREHENSIVE REPORT
+1. Institutional Overview & Event Identity
+Spoorthi Fest is the annual techno-cultural symposium conducted by the Department of Electronics and Communication Engineering (ECE) at Jawaharlal Nehru Technological University Hyderabad (JNTUH).
+The term 'Spoorthi' means inspiration, reflecting the goal of encouraging innovation, creativity, and collaboration among students.
+The ECE department, established in 1973, supports over 1000 students and is known for academic excellence and technical exposure.
+Started in 2004 as a technical fest, Spoorthi evolved into a techno-cultural event in 2009 and continues as a flagship event.
 
-## 1. Institutional Overview & Event Identity
-* **About JNTUH:** JNTUH College of Engineering, Hyderabad, is a premier institution known for high educational standards, emphasizing both theoretical knowledge and practical exposure to produce highly skilled professionals.
-* **About the ECE Department:** Established in **1973**, the Department of Electronics and Communication Engineering is a highly sought-after destination for engineering students in Telangana. It hosts academic programs for **1000+ students**, spanning undergraduate and multiple postgraduate specializations.
-* **Event Definition:** **Spoorthi** (meaning "Inspiration" in Telugu) is the annual National Level Techno-Cultural Symposium organized by the JNTUH ECE Department. 
-* **Legacy:** Established in **2004** as a technical fest, it evolved into a techno-cultural event in **2009**. It has been running successfully for **22 years**, drawing over 1,000 participants annually from colleges across Telangana and Andhra Pradesh (e.g., BVRIT, CBIT, ACE Engineering College).
+2. History & Evolution
+Spoorthi has grown significantly over the years with increasing participation and event diversity.
+Earlier editions included paper presentations, project expos, quizzes, workshops, and cultural activities.
+Recent years introduced hackathons, industry collaborations, and online events.
 
----
+3. Organization & Management
+The fest is organized by faculty and students collaboratively, giving students real-world experience in leadership and event management.
 
-## 2. Leadership & Contact Information
-* **Official Web Platforms:** `www.jntuhspoorthi.com` | `ece.jntuceh.ac.in/spoorthi`
-* **Official Email:** `spoorthi@jntuh.ac.in`
-* **Test/Support Contact:** `spoorthi-ece@jntuh.test` | Phone: 90000 12345
-* **Historical Faculty Leadership:** Dr. K. Anitha Sheela (Professor & Head), Dr. A. Rajani (Chairperson), Dr. D. Srinivasa Rao (Faculty Coordinator).
-* **Current/Test Edition Coordinators:**
-  * **Faculty Coordinator:** Dr. Kavitha Rao
-  * **Student Coordinator:** Akhil Reddy
-  * **Student Coordinator Contact Number:** 90000 12345
+4. Leadership & Coordinators
+Faculty Coordinator: Dr. Anitha Sheela Kancharla (Professor & Director UIIC)
+Student Coordinators: Naveen, Nikitha, Aditya Singh, Yashashwini
+Finance Team: Adithya Varma, Eshwar
 
----
+5. Workshops
+PCB Workshop (March 16–17): Focused on schematic design and PCB fabrication. Coordinators: Yamini, Rajanna, Srinath, Tanveer.
+AI & IoT Workshop: Covered image processing using MATLAB and IoT systems with industry experts.
 
-## 3. Event Schedule & Logistics
-Spoorthi activities span the academic year (Phase 1: Workshops from September-February), culminating in a two-day symposium (Phase 2: March/April). Below is the schedule and venue mapping for the symposium days.
+6. Hackathon
+A 2-day innovation event where students built solutions to real-world problems.
+Coordinators: Aditya, Naveen, Eswar, Veda, Nikhitha, Phaneendra, Vinay.
 
-### Master Schedule
-| Time | Event | Location |
-| :--- | :--- | :--- |
-| **09:00 AM** | Registration Desk Opens | Near ECE Dept. Entrance |
-| **09:30 AM** | Inauguration Ceremony | ECE Seminar Hall |
-| **11:00 AM** | AI Workshop for Students | Seminar Hall A |
-| **12:30 PM** | Circuit Design Challenge | ECE Lab 2 |
-| **01:30 PM** | Lunch Break | - |
-| **02:30 PM** | Project Expo | Department Corridor |
-| **03:00 PM** | Paper Presentation Session | Room E-204 |
-| **04:30 PM** | Cultural Performances | Open Stage |
-| **05:30 PM** | Prize Distribution | Main Auditorium |
+7. Promotional Activities
+Flashmob at Sarath City Capital Mall coordinated by Adithya Singh, Greeshmitha, Zoyan, Lasya.
 
-### Venue Directory
-| Venue | Designated Use |
-| :--- | :--- |
-| **ECE Seminar Hall** | Inauguration and Keynote sessions. |
-| **Seminar Hall A** | Workshop sessions (e.g., AI Workshop). |
-| **ECE Lab 2** | Hardware and circuit-based competitions. |
-| **Room E-204** | Paper presentation sessions. |
-| **Department Corridor**| Project Expo setups and demonstrations. |
-| **Open Stage** | Cultural events, music, and dance performances. |
-| **Main Auditorium** | Closing activities and Prize Distribution. |
+8. Experience Zones
+Art Room: Managed by Veda, Akanksha, Rishikesh, Sindhuja.
+Tech Room: Managed by Surya, Srinidhi, Meghana, Neshitha, Sainag.
 
----
+9. Faculty Team
+Includes senior professors and assistant professors contributing to academic and administrative excellence.
 
-## 4. Registration & Event Rules
-* **Registration:** Available at the help desk near the ECE department entrance. Spot registration is available until **10:30 AM** for selected events.
-* **Identification:** All participants must carry and wear their college ID cards inside the venue at all times.
-* **Punctuality:** Participants must report **15 minutes** before the event start time. Late entries may be denied for workshops and presentations.
-* **Team Limits:** Group events allow up to **4 members** per team. (Note: E-Papyrus is limited to 2 members).
-* **Project Expo:** Teams must have their models completely set up by **2:00 PM**.
-* **Judging:** Judges' decisions are final for all technical events.
+10. Sponsors & Partnerships
+ECE Alumni, ICICI Bank, IEEE SB JNTUH, OHM Institute, MathWorks, Physitech Electronics, BrainOVision Solutions Pvt. Ltd.
 
----
+11. Technical Events & Event Heads
+Tech Treasure Hunt – Coordinators: Bhavana, Gagan, Sonal, Mahesh
+IDEATHON – Coordinators: Shashank, Akshay, Divya, Anuhya
+Code Clutch – Coordinators: Jithendra, Sharan, Sowmya Sri, Sravanthi
+Logic Combat – Coordinators: Suraj, Srujith, Bhargavi, Rajeswari
+Tech Quiz – Coordinators: Hrushikesh Reddy, Vaishnav, Ravali Sri, Harika
+Proto Circuit – Coordinators: Swetha, Abhinikshith, Navya Sri, Mani Vivek
+Posteriza – Coordinators: Maheshwar, Pavan, Mounika, Sadvi
 
-## 5. Core Technical Competitions (The Symposium)
-### Academic & Research
-* **E-Papyrus (Paper Presentation):** The flagship event for presenting research on 5G/6G, Embedded Systems, Signal Processing, and IoT. Abstracts are limited to 200 words, final papers must be in IEEE format, and presentations in `.ppt`.
-* **Poster Presentation:** Visual displays of innovative technical ideas.
-* **Project Expo:** Showcasing working prototypes (e.g., Autonomous Drones, Smart City IoT, AI-driven assistive tech).
-
-### Hardware & Software Challenges
-* **Circuitrix / Circuit Innovation:** Designing and debugging complex electronic circuits using tools like Multisim or PSpice.
-* **Matlab Mania:** Coding and simulation competition for mathematical and signal processing problems using MATLAB/Simulink.
-* **Digi Logix:** Focused on digital electronics, boolean algebra, and logic gates.
-* **Line Follower:** Autonomous robotics navigation challenge on a complex track.
-* **Technical Quiz:** High-speed trivia covering the core ECE curriculum.
-
----
-
-## 6. Emerging Tech & Industry Workshops (Pre-Fest Phase)
-These sessions often feature industry collaboration (e.g., MathWorks, IEEE STB11759A, Tech Fluent Solutions).
-* **AI & Programming:** "Magicball AI Festival" (Generative AI/Prompt Engineering), "Applied Python Programming."
-* **Robotics & 3D Printing:** "3D - Modeling of Robotic ARM and overview of 3D printing."
-* **VLSI & Chip Design:** "VLSI Design Methodology using FPGA" and "CMOS Layout design flow using Micro Wind Tool."
-* **Telecom & Networks:** Seminars on "Wifi Evolution in IoT" and industrial Hackathons (Software-Defined Radio, Edge AI).
-
----
-
-## 7. Cultural & Management Activities
-* **Spot Events:** Informal, high-energy games including JAM (Just A Minute), Technical Treasure Hunts, and Photography contests.
-* **Cultural Night:** Post-competition unwinding with music, dance, and "Jamming Truly" sessions.
-* **Guest Lectures:** Keynotes from industry leaders (historically featuring companies like NVIDIA, Qualcomm, or ISRO).
-* **PR Activities:** Flash mobs at prominent city locations (like Next Galleria Mall) to launch the fest.
+12. Legacy & Social Impact
+Spoorthi has a legacy of 22+ years and includes initiatives like food donation drives and road safety awareness programs.
