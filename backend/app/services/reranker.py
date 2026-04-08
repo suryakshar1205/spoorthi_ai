@@ -4,7 +4,7 @@ import logging
 
 from app.config import Settings
 from app.models.domain import SearchMatch
-from app.utils.text import extract_keywords
+from app.utils.text import extract_keywords, fuzzy_token_hits, normalize_query_text
 
 
 logger = logging.getLogger(__name__)
@@ -18,18 +18,20 @@ class RerankerService:
         if not matches:
             return []
 
-        query_text = query.lower()
-        query_tokens = set(extract_keywords(query))
+        query_text = normalize_query_text(query)
+        query_tokens = set(extract_keywords(query_text))
         if not query_tokens:
-            query_tokens = set(extract_keywords(query, keep_generic_terms=True))
+            query_tokens = set(extract_keywords(query_text, keep_generic_terms=True))
+        intents = self._detect_intents(query_text)
+        broad_query = self._is_broad_query(query_text)
 
         reranked: list[SearchMatch] = []
         for match in matches:
-            text = match.chunk.text.lower()
+            text = normalize_query_text(match.chunk.text)
             metadata = match.chunk.metadata
             keyword_bonus = self._keyword_bonus(query_tokens, text)
             phrase_bonus = self._phrase_bonus(query_text, text)
-            structure_bonus = 0.08 if metadata.get("section") in {"schedule", "registration", "venue", "rules", "contact"} else 0.0
+            structure_bonus = self._section_adjustment(intents, broad_query, metadata.get("section", "general"))
             clean_bonus = 0.08 if metadata.get("quality", "clean") == "clean" else 0.0
             rerank_score = (
                 (match.score * 0.5)
@@ -66,8 +68,9 @@ class RerankerService:
     def _keyword_bonus(self, query_tokens: set[str], text: str) -> float:
         if not query_tokens:
             return 0.0
-        hits = sum(1 for token in query_tokens if token in text)
-        return min(0.18, hits * 0.04)
+        text_tokens = set(extract_keywords(text, keep_generic_terms=True))
+        exact_hits, fuzzy_hits = fuzzy_token_hits(query_tokens, text_tokens)
+        return min(0.2, (exact_hits * 0.04) + (fuzzy_hits * 0.025))
 
     def _phrase_bonus(self, query_text: str, text: str) -> float:
         phrases = [
@@ -79,3 +82,55 @@ class RerankerService:
             if phrase in text:
                 return 0.16
         return 0.0
+
+    def _detect_intents(self, query_text: str) -> set[str]:
+        intents: set[str] = set()
+        if any(term in query_text for term in ("today", "schedule", "agenda", "timeline", "happening", "timing")):
+            intents.add("schedule")
+        if any(term in query_text for term in ("where", "venue", "location", "hall", "room", "auditorium", "lab")):
+            intents.add("venue")
+        if any(term in query_text for term in ("register", "registration", "help desk", "spot registration", "id card")):
+            intents.add("registration")
+        if any(term in query_text for term in ("contact", "coordinator", "faculty", "student", "email", "phone", "organizer")):
+            intents.add("contact")
+        if any(term in query_text for term in ("rule", "rules", "allowed", "late entry", "team", "members")):
+            intents.add("rules")
+        if any(term in query_text for term in ("workshop", "presentation", "expo", "challenge", "quiz", "hackathon", "contest")):
+            intents.add("events")
+        if any(term in query_text for term in ("history", "legacy", "about", "overview", "what is")):
+            intents.add("overview")
+        return intents
+
+    def _section_adjustment(self, intents: set[str], broad_query: bool, section: str) -> float:
+        if not intents:
+            return 0.0
+
+        section = section or "general"
+        adjustment = 0.0
+        if "contact" in intents and section == "contact":
+            adjustment += 0.12
+        if "registration" in intents and section == "registration":
+            adjustment += 0.12
+        if ("venue" in intents or "schedule" in intents or "events" in intents) and section in {"schedule", "venue", "events"}:
+            adjustment += 0.1
+        if "overview" in intents and section in {"history", "general"}:
+            adjustment += 0.06
+        if not broad_query and section == "history" and any(
+            intent in intents for intent in ("contact", "registration", "rules", "schedule", "venue", "events")
+        ):
+            adjustment -= 0.18
+        return adjustment
+
+    def _is_broad_query(self, query_text: str) -> bool:
+        broad_terms = (
+            "what events are happening",
+            "today",
+            "schedule",
+            "agenda",
+            "timing of workshops",
+            "suggest some events",
+            "beginner",
+            "overview",
+            "tell me about",
+        )
+        return any(term in query_text for term in broad_terms)

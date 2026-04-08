@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import re
 
+from app.utils.text import normalize_query_text
+
 
 FALLBACK_ANSWER = "I don't have that information. Please contact the organizers."
 
@@ -14,11 +16,8 @@ STARTER_QUESTIONS = (
 
 
 def normalize_query(query: str) -> str:
-    lowered = query.lower().strip()
-    lowered = re.sub(r"[^a-z0-9\s]", " ", lowered)
-    lowered = re.sub(r"\bco\s+ord(?:\s+inator)?s?\b", " coordinator ", lowered)
+    lowered = normalize_query_text(query)
     lowered = re.sub(r"\bcoordinator\s+s\b", " coordinators ", lowered)
-    lowered = re.sub(r"\bfacult(?:y)?\b", " faculty ", lowered)
     replacements = {
         "facult": "faculty",
         "coord": "coordinator",

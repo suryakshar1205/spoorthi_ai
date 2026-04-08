@@ -16,6 +16,19 @@ SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
 CITATION_RE = re.compile(r"(?:\[\d+\])+")
 SPACED_YEAR_RE = re.compile(r"\b(?:\d\s+){3}\d\b")
 HEADING_RE = re.compile(r"^(#{1,6}\s+.+|[A-Z][A-Za-z0-9 /&()'_-]{2,}:)$")
+NON_ALNUM_RE = re.compile(r"[^a-z0-9\s]")
+
+QUERY_REPLACEMENTS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (re.compile(r"\bco\s*[- ]?\s*ord(?:\s*[- ]?\s*inator)?s?\b", re.IGNORECASE), " coordinator "),
+    (re.compile(r"\bcoords?\b", re.IGNORECASE), " coordinator "),
+    (re.compile(r"\bfacult\b", re.IGNORECASE), " faculty "),
+    (re.compile(r"\bstud\s*coord\b", re.IGNORECASE), " student coordinator "),
+    (re.compile(r"\bstud\b", re.IGNORECASE), " student "),
+    (re.compile(r"\borganisers?\b", re.IGNORECASE), " organizers "),
+    (re.compile(r"\bdept\b", re.IGNORECASE), " department "),
+    (re.compile(r"\bregs?\b", re.IGNORECASE), " registration "),
+    (re.compile(r"\bloc\b", re.IGNORECASE), " location "),
+)
 
 STOPWORDS = {
     "a",
@@ -94,6 +107,9 @@ def structured_text(text: str) -> str:
     text = text.replace("\x00", "")
     text = text.replace("\u2011", "-").replace("\u2012", "-").replace("\u2013", "-").replace("\u2014", "-")
     text = text.replace("â€“", "-").replace("â€”", "-")
+    text = text.replace("â€“", "-").replace("â€”", "-")
+    text = text.replace("â€™", "'").replace("â€˜", "'")
+    text = text.replace("â€œ", '"').replace("â€", '"')
     lines = [WHITESPACE_RE.sub(" ", line).strip() for line in text.split("\n")]
 
     cleaned: list[str] = []
@@ -130,6 +146,15 @@ def normalize_source_text(text: str) -> str:
     return text.strip()
 
 
+def normalize_query_text(text: str) -> str:
+    normalized = normalize_source_text(text).lower()
+    normalized = NON_ALNUM_RE.sub(" ", normalized)
+    for pattern, replacement in QUERY_REPLACEMENTS:
+        normalized = pattern.sub(replacement, normalized)
+    normalized = re.sub(r"\s+", " ", normalized)
+    return normalized.strip()
+
+
 def token_count(text: str) -> int:
     return len(TOKEN_RE.findall(text))
 
@@ -146,6 +171,31 @@ def extract_keywords(text: str, *, keep_generic_terms: bool = False) -> list[str
         keywords.append(token)
 
     return keywords
+
+
+def token_matches(query_token: str, candidate_token: str) -> bool:
+    if not query_token or not candidate_token:
+        return False
+    if query_token == candidate_token:
+        return True
+    if len(query_token) >= 4 and len(candidate_token) >= 4:
+        if candidate_token.startswith(query_token) or query_token.startswith(candidate_token):
+            return True
+    if len(query_token) >= 5 and len(candidate_token) >= 5:
+        if query_token in candidate_token or candidate_token in query_token:
+            return True
+    return False
+
+
+def fuzzy_token_hits(query_tokens: set[str], text_tokens: set[str]) -> tuple[int, int]:
+    exact_hits = len(query_tokens & text_tokens)
+    fuzzy_hits = 0
+
+    for token in query_tokens - text_tokens:
+        if any(token_matches(token, candidate) for candidate in text_tokens):
+            fuzzy_hits += 1
+
+    return exact_hits, fuzzy_hits
 
 
 def sanitize_filename(name: str) -> str:

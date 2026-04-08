@@ -53,14 +53,15 @@ async def test_rag_pipeline_validation_queries(tmp_path: Path) -> None:
         memory_service=MemoryService(max_turns=6),
     )
 
-    paper_presentation = await rag_service.answer_query("Where is the paper presentation session?", session_id="test-session")
-    rules = await rag_service.answer_query("What are the rules for coding contest?", session_id="test-session")
-    beginners = await rag_service.answer_query("Suggest some events for beginners", session_id="test-session")
-    workshops = await rag_service.answer_query("What is the timing of workshops?", session_id="test-session")
-    student_coord = await rag_service.answer_query("Who is student co ord?", session_id="test-session")
+    faculty_coord = await rag_service.answer_query("Who is facult co ord?", session_id="test-session")
+    student_coord = await rag_service.answer_query("Who are the student co ords?", session_id="test-session")
+    workshops = await rag_service.answer_query("Tell me about the workshops", session_id="test-session")
+    overview = await rag_service.answer_query("What is Spoorthi?", session_id="test-session")
+    unknown = await rag_service.answer_query("What is the hostel bus route for visitors?", session_id="test-session")
 
-    assert "Room E-204" in paper_presentation.answer
-    assert rules.answer
-    assert "beginner-friendly" in beginners.answer.lower() or "here are a few" in beginners.answer.lower()
-    assert "11:00 AM" in workshops.answer or "AI Workshop" in workshops.answer
-    assert "Akhil Reddy" in student_coord.answer
+    assert "Dr. Anitha Sheela Kancharla" in faculty_coord.answer
+    assert "Naveen" in student_coord.answer or "Nikitha" in student_coord.answer
+    assert "PCB Workshop" in workshops.answer or "AI & IoT Workshop" in workshops.answer
+    assert "Spoorthi" in overview.answer and "JNTUH" in overview.answer
+    assert "Please contact the organizers" in unknown.answer
+    assert "Faculty Coordinator" in unknown.answer

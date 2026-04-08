@@ -6,12 +6,11 @@ import re
 from app.config import Settings
 from app.models.domain import SearchMatch
 from app.services.vector_service import VectorService
-from app.utils.text import extract_keywords
+from app.utils.text import extract_keywords, fuzzy_token_hits, normalize_query_text
 
 
 logger = logging.getLogger(__name__)
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\s*(?:AM|PM)\b", re.IGNORECASE)
-COORD_RE = re.compile(r"\bco\s+ord(?:\s+inator)?s?\b", re.IGNORECASE)
 
 
 class RetrieverService:
@@ -21,25 +20,41 @@ class RetrieverService:
 
     async def retrieve(self, query: str, top_k: int | None = None) -> list[SearchMatch]:
         limit = top_k or max(5, self.settings.top_k)
-        candidates = await self.vector_service.semantic_search(query, min(len(self.vector_service.records), limit * 4))
-        query_text = COORD_RE.sub(" coordinator ", query.lower())
-        query_tokens = set(extract_keywords(query))
+        semantic_candidates = await self.vector_service.semantic_search(query, min(len(self.vector_service.records), limit * 4))
+        query_text = normalize_query_text(query)
+        query_tokens = set(extract_keywords(query_text))
         if not query_tokens:
-            query_tokens = set(extract_keywords(query, keep_generic_terms=True))
+            query_tokens = set(extract_keywords(query_text, keep_generic_terms=True))
         intents = self._detect_intents(query_text)
         broad_query = self._is_broad_query(query_text)
 
+        candidates_by_id = {match.chunk.id: match for match in semantic_candidates}
+        if len(self.vector_service.records) <= 300:
+            for record in self.vector_service.records:
+                candidates_by_id.setdefault(
+                    record.id,
+                    SearchMatch(
+                        chunk=record,
+                        score=0.0,
+                        semantic_score=0.0,
+                        lexical_score=0.0,
+                        quality_score=1.0,
+                    ),
+                )
+
         ranked: list[SearchMatch] = []
-        for match in candidates:
+        for match in candidates_by_id.values():
             chunk_text = match.chunk.text
             lexical_score = self._lexical_score(query_tokens, chunk_text)
             intent_score, reasons = self._intent_score(intents, chunk_text, match.chunk.metadata.get("section", ""))
             quality_score = self._quality_score(chunk_text, match.chunk.metadata.get("quality", "clean"))
+            section_adjustment = self._section_adjustment(intents, broad_query, match.chunk.metadata.get("section", ""))
             total_score = (
                 (match.semantic_score * 0.35)
                 + (lexical_score * 0.35)
                 + (intent_score * 0.2)
                 + (quality_score * 0.1)
+                + section_adjustment
             )
 
             if lexical_score == 0 and intent_score == 0:
@@ -74,16 +89,17 @@ class RetrieverService:
         if not query_tokens:
             return 0.0
 
-        text_tokens = set(extract_keywords(text, keep_generic_terms=True))
+        text_tokens = set(extract_keywords(normalize_query_text(text), keep_generic_terms=True))
         if not text_tokens:
             return 0.0
 
-        overlap = len(query_tokens & text_tokens)
-        if overlap == 0:
+        exact_hits, fuzzy_hits = fuzzy_token_hits(query_tokens, text_tokens)
+        total_hits = exact_hits + (fuzzy_hits * 0.65)
+        if total_hits == 0:
             return 0.0
 
-        coverage = overlap / max(1.0, len(query_tokens))
-        density = overlap / max(8.0, len(text_tokens))
+        coverage = total_hits / max(1.0, len(query_tokens))
+        density = total_hits / max(8.0, len(text_tokens))
         return min(1.0, (coverage * 0.8) + (density * 0.5))
 
     def _detect_intents(self, query_text: str) -> set[str]:
@@ -164,6 +180,26 @@ class RetrieverService:
         if "\x00" in text:
             score -= 0.25
         return max(0.1, min(1.0, score))
+
+    def _section_adjustment(self, intents: set[str], broad_query: bool, section: str) -> float:
+        if not intents:
+            return 0.0
+
+        section = section or "general"
+        adjustment = 0.0
+
+        if "contact" in intents and section == "contact":
+            adjustment += 0.08
+        if "registration" in intents and section == "registration":
+            adjustment += 0.08
+        if ("venue" in intents or "schedule" in intents or "events" in intents) and section in {"schedule", "venue", "events"}:
+            adjustment += 0.06
+        if not broad_query and section == "history" and any(
+            intent in intents for intent in ("contact", "registration", "rules", "schedule", "venue", "events")
+        ):
+            adjustment -= 0.16
+
+        return adjustment
 
     def _is_broad_query(self, query_text: str) -> bool:
         broad_terms = (

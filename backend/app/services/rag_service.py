@@ -20,7 +20,7 @@ EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 PHONE_RE = re.compile(r"(?:\+?\d[\d\s\-]{8,}\d)")
 CONTACT_KEYWORDS = ("coordinator", "organizer", "contact", "phone", "email", "help desk")
 ROLE_CONTACT_RE = re.compile(
-    r"\b(?P<role>(?:faculty|student|event|overall|test(?: edition)?)?\s*coordinator)\s*:\s*(?P<name>[A-Za-z][A-Za-z .'\-]{1,60})",
+    r"\b(?P<role>(?:faculty|student|event|overall|test(?: edition)?)?\s*coordinators?)\s*:\s*(?P<name>[A-Za-z][A-Za-z .,'&()\-]{1,100})",
     re.IGNORECASE,
 )
 HELP_DESK_RE = re.compile(r"\bhelp\s*desk(?:\s*location)?\s*:\s*(?P<value>[^|\n.;]{3,100})", re.IGNORECASE)
@@ -258,7 +258,7 @@ class RAGService:
             lowered = line.lower()
             has_email = EMAIL_RE.search(line) is not None
             has_phone = PHONE_RE.search(line) is not None
-            has_role = "coordinator:" in lowered or "organizer:" in lowered
+            has_role = "coordinator:" in lowered or "coordinators:" in lowered or "organizer:" in lowered
             has_help_desk = "help desk" in lowered and ":" in lowered
             if not (has_email or has_phone or has_role or has_help_desk):
                 continue
@@ -283,7 +283,11 @@ class RAGService:
             lowered = line.lower().strip()
             if lowered.startswith("faculty coordinator:"):
                 return (0, lowered)
+            if lowered.startswith("faculty coordinators:"):
+                return (0, lowered)
             if lowered.startswith("student coordinator:"):
+                return (1, lowered)
+            if lowered.startswith("student coordinators:"):
                 return (1, lowered)
             if lowered.startswith("student coordinator contact number:"):
                 return (2, lowered)

@@ -6,7 +6,7 @@ import logging
 import re
 
 from app.config import Settings
-from app.utils.text import extract_keywords, normalize_source_text, normalize_text
+from app.utils.text import extract_keywords, fuzzy_token_hits, normalize_query_text, normalize_source_text, normalize_text
 
 
 logger = logging.getLogger(__name__)
@@ -47,6 +47,7 @@ IGNORED_EVENT_TITLES = {
 FIELD_LABELS = {
     "category": "Category",
     "faculty coordinator": "Faculty Coordinator",
+    "faculty coordinators": "Faculty Coordinators",
     "group event limit": "Team Size",
     "group event size": "Team Size",
     "id requirement": "ID Requirement",
@@ -59,12 +60,20 @@ FIELD_LABELS = {
     "registration help desk location": "Registration Help Desk",
     "spot registration": "Spot Registration",
     "student coordinator": "Student Coordinator",
+    "student coordinators": "Student Coordinators",
     "student coordinator contact number": "Student Coordinator Contact Number",
     "support email": "Support Email",
     "support phone": "Support Phone",
     "team size": "Team Size",
     "time": "Time",
 }
+
+FIELD_ALIASES = {
+    "faculty coordinators": "faculty coordinator",
+    "student coordinators": "student coordinator",
+}
+
+FALLBACK_ANSWER = "I don't have that information. Please contact the organizers."
 
 
 class ProviderError(RuntimeError):
@@ -101,10 +110,10 @@ class LocalProvider:
         if not retrieved_context.strip():
             return FALLBACK_ANSWER
 
-        query_text = normalize_text(COORD_RE.sub(" coordinator ", query.lower()))
-        query_tokens = set(extract_keywords(query))
+        query_text = normalize_query_text(query)
+        query_tokens = set(extract_keywords(query_text))
         if not query_tokens:
-            query_tokens = set(extract_keywords(query, keep_generic_terms=True))
+            query_tokens = set(extract_keywords(query_text, keep_generic_terms=True))
 
         schedule_items = self._extract_schedule_items(retrieved_context)
         event_cards = self._extract_event_cards(retrieved_context)
@@ -206,6 +215,7 @@ class LocalProvider:
         fields: dict[str, str] = {}
         for match in PLAIN_FIELD_RE.finditer(text):
             label = normalize_text(match.group("label")).lower()
+            label = FIELD_ALIASES.get(label, label)
             value = normalize_text(match.group("value"))
             if label and value and label not in fields:
                 fields[label] = value
@@ -252,27 +262,30 @@ class LocalProvider:
         wants_faculty = "faculty" in query_text and "coordinator" in query_text
         wants_student = "student" in query_text and "coordinator" in query_text
         wants_current = any(term in query_text for term in ("current", "present", "now", "latest"))
+        faculty_value = self._resolve_field(fields, "faculty coordinator")
+        student_value = self._resolve_field(fields, "student coordinator")
+        student_contact_number = self._resolve_field(fields, "student coordinator contact number")
+        official_email = self._resolve_field(fields, "official email", "support email")
+        phone_value = self._resolve_field(fields, "support phone", "phone")
 
-        if wants_faculty and "faculty coordinator" in fields:
+        if wants_faculty and faculty_value:
             lines = [
-                "- Faculty Coordinator: " + fields["faculty coordinator"],
+                "- Faculty Coordinator: " + faculty_value,
             ]
-            if "official email" in fields:
-                lines.append("- Official Email: " + fields["official email"])
+            if official_email:
+                lines.append("- Official Email: " + official_email)
             return "Faculty Coordinator Details:\n" + "\n".join(lines)
 
-        if wants_student and "student coordinator" in fields:
+        if wants_student and student_value:
             lines = [
-                "- Student Coordinator: " + fields["student coordinator"],
+                "- Student Coordinator: " + student_value,
             ]
-            if "student coordinator contact number" in fields:
-                lines.append("- Student Coordinator Contact Number: " + fields["student coordinator contact number"])
-            elif "support phone" in fields:
-                lines.append("- Support Phone: " + fields["support phone"])
-            elif "phone" in fields:
-                lines.append("- Phone: " + fields["phone"])
-            if "official email" in fields:
-                lines.append("- Official Email: " + fields["official email"])
+            if student_contact_number:
+                lines.append("- Student Coordinator Contact Number: " + student_contact_number)
+            elif phone_value:
+                lines.append("- Phone: " + phone_value)
+            if official_email:
+                lines.append("- Official Email: " + official_email)
             return "Student Coordinator Details:\n" + "\n".join(lines)
 
         contact_points: list[str] = []
@@ -289,8 +302,24 @@ class LocalProvider:
         )
 
         for key in preferred_keys:
-            if key in fields:
-                contact_points.append(f"- {self._field_label(key)}: {fields[key]}")
+            value = self._resolve_field(fields, key)
+            if value:
+                contact_points.append(f"- {self._field_label(key)}: {value}")
+
+        if not wants_faculty and not wants_student and "coordinator" in query_text and (faculty_value or student_value):
+            prioritized = []
+            if faculty_value:
+                prioritized.append(f"- Faculty Coordinator: {faculty_value}")
+            if student_value:
+                prioritized.append(f"- Student Coordinator: {student_value}")
+            if student_contact_number:
+                prioritized.append(f"- Student Coordinator Contact Number: {student_contact_number}")
+            elif phone_value:
+                prioritized.append(f"- Phone: {phone_value}")
+            if official_email:
+                prioritized.append(f"- Official Email: {official_email}")
+            if prioritized:
+                return "Organizer Contact Details:\n" + "\n".join(prioritized[:5])
 
         if not contact_points:
             for sentence in sentences:
@@ -521,15 +550,16 @@ class LocalProvider:
         top_sentences = self._top_sentences(query_tokens, sentences, limit=3)
         if not top_sentences:
             return None
-        return "Here’s what I found:\n" + "\n".join(f"- {sentence}" for sentence in top_sentences)
+        return "Here's what I found:\n" + "\n".join(f"- {sentence}" for sentence in top_sentences)
 
     def _rank_schedule_items(self, query_tokens: set[str], items: list[dict[str, str]]) -> list[tuple[float, dict[str, str]]]:
         ranked: list[tuple[float, dict[str, str]]] = []
         for item in items:
-            haystack = f"{item['event']} {item['location']}".lower()
-            overlap = len(query_tokens & set(extract_keywords(haystack, keep_generic_terms=True)))
+            haystack = normalize_query_text(f"{item['event']} {item['location']}")
+            text_tokens = set(extract_keywords(haystack, keep_generic_terms=True))
+            exact_hits, fuzzy_hits = fuzzy_token_hits(query_tokens, text_tokens)
             bonus = 0.2 if any(token in haystack for token in query_tokens if len(token) >= 4) else 0.0
-            ranked.append((overlap + bonus, item))
+            ranked.append((exact_hits + (fuzzy_hits * 0.65) + bonus, item))
         ranked.sort(key=lambda entry: entry[0], reverse=True)
         return ranked
 
@@ -539,10 +569,11 @@ class LocalProvider:
 
         ranked: list[tuple[float, EventCard]] = []
         for card in cards:
-            haystack = f"{card.title} {' '.join(f'{key} {value}' for key, value in card.fields.items())}".lower()
-            overlap = len(query_tokens & set(extract_keywords(haystack, keep_generic_terms=True)))
+            haystack = normalize_query_text(f"{card.title} {' '.join(f'{key} {value}' for key, value in card.fields.items())}")
+            text_tokens = set(extract_keywords(haystack, keep_generic_terms=True))
+            exact_hits, fuzzy_hits = fuzzy_token_hits(query_tokens, text_tokens)
             bonus = 0.2 if any(token in haystack for token in query_tokens if len(token) >= 4) else 0.0
-            score = overlap + bonus
+            score = exact_hits + (fuzzy_hits * 0.65) + bonus
             if score > 0:
                 ranked.append((score, card))
 
@@ -592,13 +623,21 @@ class LocalProvider:
         normalized = normalize_text(key).lower()
         return FIELD_LABELS.get(normalized, normalized.title())
 
+    def _resolve_field(self, fields: dict[str, str], *keys: str) -> str | None:
+        for key in keys:
+            normalized_key = FIELD_ALIASES.get(key, key)
+            if normalized_key in fields:
+                return fields[normalized_key]
+        return None
+
     def _top_sentences(self, query_tokens: set[str], sentences: list[str], limit: int) -> list[str]:
         ranked: list[tuple[float, str]] = []
         for sentence in sentences:
-            lowered = sentence.lower()
-            overlap = len(query_tokens & set(extract_keywords(sentence, keep_generic_terms=True)))
+            lowered = normalize_query_text(sentence)
+            text_tokens = set(extract_keywords(lowered, keep_generic_terms=True))
+            exact_hits, fuzzy_hits = fuzzy_token_hits(query_tokens, text_tokens)
             bonus = 0.2 if any(token in lowered for token in query_tokens if len(token) >= 4) else 0.0
-            score = overlap + bonus
+            score = exact_hits + (fuzzy_hits * 0.65) + bonus
             if score <= 0:
                 continue
             ranked.append((score, sentence))
