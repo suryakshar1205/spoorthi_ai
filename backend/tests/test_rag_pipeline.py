@@ -503,7 +503,8 @@ def test_strict_prompt_uses_context_and_question_legacy() -> None:
     assert "You are Spoorthi Chatbot, an assistant for a technical fest." in prompt
     assert "Context:\nTech Room\nPurpose: Technical games and project demonstrations" in prompt
     assert "Question:\nWhat is Tech Room?" in prompt
-    assert "I don’t have that information. Please contact the organizers." in prompt
+    assert "I don't have that information. Please contact the organizers." in prompt
+    assert "Do NOT guess, infer missing facts, or hallucinate details" in prompt
 
 def test_strict_prompt_uses_context_and_question() -> None:
     settings = Settings()
