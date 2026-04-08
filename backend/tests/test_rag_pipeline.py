@@ -341,6 +341,134 @@ async def test_step9_required_validation_queries(tmp_path: Path) -> None:
     )
 
 
+def test_retrieval_query_uses_memory_only_for_true_follow_ups() -> None:
+    settings = Settings()
+    memory_service = MemoryService(max_turns=6)
+    memory_service.append_turn("follow-up-session", "user", "Tell me about the workshops")
+
+    rag_service = RAGService(
+        settings=settings,
+        retriever=None,  # type: ignore[arg-type]
+        reranker=None,  # type: ignore[arg-type]
+        search_service=None,  # type: ignore[arg-type]
+        llm_service=None,  # type: ignore[arg-type]
+        memory_service=memory_service,
+    )
+
+    assert rag_service._build_retrieval_query("follow-up-session", "Who are the sponsors?") == "Who are the sponsors?"
+    assert rag_service._build_retrieval_query("follow-up-session", "finance team") == "finance team"
+    assert rag_service._build_retrieval_query("follow-up-session", "What about timings?") == (
+        "Tell me about the workshops\nFollow-up question: What about timings?"
+    )
+
+
+@pytest.mark.asyncio
+async def test_short_keyword_queries_resolve_correct_sections_within_session(tmp_path: Path) -> None:
+    settings = Settings(
+        use_internet_fallback=False,
+        knowledge_dir=tmp_path / "data",
+        upload_dir=tmp_path / "data" / "uploads",
+        faiss_index_path=tmp_path / "data" / "knowledge.index",
+        metadata_path=tmp_path / "data" / "knowledge.json",
+    )
+    settings.ensure_directories()
+
+    sample_path = Path(__file__).resolve().parents[1] / "sample_data" / "spoorthi_context.txt"
+    sample_text = sample_path.read_text(encoding="utf-8")
+    chunks = build_chunk_records(
+        document_id="test-doc",
+        file_name=sample_path.name,
+        source_type="document",
+        text=sample_text,
+        chunk_size=settings.chunk_size,
+        overlap=settings.chunk_overlap,
+        metadata={"seeded": "true"},
+    )
+
+    embedding_service = EmbeddingService(settings)
+    vector_service = VectorService(settings, embedding_service=embedding_service)
+    await vector_service.initialize()
+    await vector_service.add_chunks(chunks)
+
+    rag_service = RAGService(
+        settings=settings,
+        retriever=RetrieverService(settings, vector_service),
+        reranker=RerankerService(settings),
+        search_service=SearchService(settings),
+        llm_service=LLMService(settings),
+        memory_service=MemoryService(max_turns=6),
+    )
+
+    await rag_service.answer_query("Tell me about the workshops", session_id="keyword-session")
+    sponsors = await rag_service.answer_query("Who are the sponsors?", session_id="keyword-session")
+    finance_team = await rag_service.answer_query("finance team", session_id="keyword-session")
+    hod = await rag_service.answer_query("Who is the HOD?", session_id="keyword-session")
+
+    assert sponsors.source == "document"
+    assert "Sponsors & Support Partners Details" in sponsors.answer
+    assert "ICICI Bank" in sponsors.answer or "MathWorks" in sponsors.answer
+    assert finance_team.source == "document"
+    assert "Finance Team Details" in finance_team.answer
+    assert "Adithya Varma" in finance_team.answer or "Eshwar" in finance_team.answer
+    assert hod.source == "document"
+    assert "Dr. T. Madhavi Kumari" in hod.answer
+
+
+@pytest.mark.asyncio
+async def test_typo_resilient_keyword_queries(tmp_path: Path) -> None:
+    settings = Settings(
+        use_internet_fallback=False,
+        knowledge_dir=tmp_path / "data",
+        upload_dir=tmp_path / "data" / "uploads",
+        faiss_index_path=tmp_path / "data" / "knowledge.index",
+        metadata_path=tmp_path / "data" / "knowledge.json",
+    )
+    settings.ensure_directories()
+
+    sample_path = Path(__file__).resolve().parents[1] / "sample_data" / "spoorthi_context.txt"
+    sample_text = sample_path.read_text(encoding="utf-8")
+    chunks = build_chunk_records(
+        document_id="test-doc",
+        file_name=sample_path.name,
+        source_type="document",
+        text=sample_text,
+        chunk_size=settings.chunk_size,
+        overlap=settings.chunk_overlap,
+        metadata={"seeded": "true"},
+    )
+
+    embedding_service = EmbeddingService(settings)
+    vector_service = VectorService(settings, embedding_service=embedding_service)
+    await vector_service.initialize()
+    await vector_service.add_chunks(chunks)
+
+    rag_service = RAGService(
+        settings=settings,
+        retriever=RetrieverService(settings, vector_service),
+        reranker=RerankerService(settings),
+        search_service=SearchService(settings),
+        llm_service=LLMService(settings),
+        memory_service=MemoryService(max_turns=6),
+    )
+
+    hackathon = await rag_service.answer_query("Where is hackathon?", session_id="typo-session")
+    hackathon_typo = await rag_service.answer_query("Where is hackthon?", session_id="typo-session")
+    coding_contest = await rag_service.answer_query("coding contest details", session_id="typo-session")
+    coding_contest_typo = await rag_service.answer_query("codng contest", session_id="typo-session")
+
+    assert hackathon.source == "document"
+    assert "Hackathon Location Details" in hackathon.answer
+    assert "Not specified in the current context" in hackathon.answer
+    assert hackathon_typo.source == "document"
+    assert "Hackathon Location Details" in hackathon_typo.answer
+    assert "Not specified in the current context" in hackathon_typo.answer
+    assert coding_contest.source == "document"
+    assert "Code Clutch Details" in coding_contest.answer
+    assert "coding event" in coding_contest.answer.lower() or "programming skill" in coding_contest.answer.lower()
+    assert coding_contest_typo.source == "document"
+    assert "Code Clutch Details" in coding_contest_typo.answer
+
+
 def test_semantic_chunking_preserves_meaningful_sections() -> None:
     sample_path = Path(__file__).resolve().parents[1] / "sample_data" / "spoorthi_context.txt"
     sample_text = sample_path.read_text(encoding="utf-8")
@@ -363,7 +491,7 @@ def test_semantic_chunking_preserves_meaningful_sections() -> None:
     assert not any("Faculty Coordinator" in chunk.text and "Tech Room" in chunk.text for chunk in chunks)
 
 
-def test_strict_prompt_uses_context_and_question() -> None:
+def test_strict_prompt_uses_context_and_question_legacy() -> None:
     settings = Settings()
     llm_service = LLMService(settings)
 
@@ -376,6 +504,22 @@ def test_strict_prompt_uses_context_and_question() -> None:
     assert "Context:\nTech Room\nPurpose: Technical games and project demonstrations" in prompt
     assert "Question:\nWhat is Tech Room?" in prompt
     assert "I don’t have that information. Please contact the organizers." in prompt
+
+def test_strict_prompt_uses_context_and_question() -> None:
+    settings = Settings()
+    llm_service = LLMService(settings)
+
+    prompt = llm_service.build_prompt(
+        context="Tech Room\nPurpose: Technical games and project demonstrations",
+        question="What is Tech Room?",
+    )
+
+    assert "You are Spoorthi Chatbot, an assistant for a technical fest." in prompt
+    assert "Context:\nTech Room\nPurpose: Technical games and project demonstrations" in prompt
+    assert "Question:\nWhat is Tech Room?" in prompt
+    assert "I don't have that information. Please contact the organizers." in prompt
+    assert "Do NOT guess, infer missing facts, or hallucinate details" in prompt
+
 
 def test_user_query_schema_normalizes_whitespace() -> None:
     payload = UserQuery(query="   tech   room   ", session_id="   session-1234   ")

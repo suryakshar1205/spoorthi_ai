@@ -1,16 +1,33 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 import logging
 import re
 
 from app.config import Settings
 from app.models.domain import SearchMatch
 from app.services.vector_service import VectorService
-from app.utils.text import extract_keywords, fuzzy_token_hits, normalize_query_text
+from app.utils.text import (
+    build_query_vocabulary,
+    correct_query_spelling,
+    expand_query_aliases,
+    extract_keywords,
+    fuzzy_token_hits,
+    normalize_query_text,
+)
 
 
 logger = logging.getLogger(__name__)
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\s*(?:AM|PM)\b", re.IGNORECASE)
+
+
+@dataclass(slots=True)
+class PreparedQuery:
+    original_query: str
+    normalized_query: str
+    corrected_query: str
+    expanded_query: str
+    corrections: dict[str, str]
 
 
 class RetrieverService:
@@ -18,10 +35,33 @@ class RetrieverService:
         self.settings = settings
         self.vector_service = vector_service
 
+    def prepare_query(self, query: str) -> PreparedQuery:
+        normalized_query = normalize_query_text(query)
+        corrected_query, corrections = correct_query_spelling(
+            normalized_query,
+            known_terms=self._query_vocabulary(),
+        )
+        effective_query = corrected_query or normalized_query
+        expanded_query = expand_query_aliases(effective_query)
+        return PreparedQuery(
+            original_query=query,
+            normalized_query=normalized_query,
+            corrected_query=effective_query,
+            expanded_query=expanded_query or effective_query,
+            corrections=corrections,
+        )
+
     async def retrieve(self, query: str, top_k: int | None = None) -> list[SearchMatch]:
         limit = top_k or max(5, self.settings.top_k)
-        semantic_candidates = await self.vector_service.semantic_search(query, min(len(self.vector_service.records), limit * 4))
-        query_text = normalize_query_text(query)
+        prepared_query = self.prepare_query(query)
+        semantic_query = prepared_query.corrected_query or prepared_query.normalized_query
+        scoring_query = prepared_query.expanded_query or semantic_query
+
+        semantic_candidates = await self.vector_service.semantic_search(
+            semantic_query,
+            min(len(self.vector_service.records), limit * 4),
+        )
+        query_text = normalize_query_text(scoring_query)
         query_tokens = set(extract_keywords(query_text))
         if not query_tokens:
             query_tokens = set(extract_keywords(query_text, keep_generic_terms=True))
@@ -31,9 +71,13 @@ class RetrieverService:
 
         candidates_by_id = {match.chunk.id: match for match in semantic_candidates}
         if self.settings.rag_debug_mode:
+            logger.info("Original Query: %s", prepared_query.original_query)
+            logger.info("Corrected Query: %s", prepared_query.corrected_query)
+            if prepared_query.corrections:
+                logger.info("Query Corrections: %s", prepared_query.corrections)
             logger.info(
                 "RAG DEBUG retriever_input query=%r top_k=%s semantic_candidates=%s",
-                query,
+                semantic_query,
                 limit,
                 [
                     {
@@ -64,13 +108,15 @@ class RetrieverService:
             chunk_text = match.chunk.text
             lexical_score = self._lexical_score(query_tokens, chunk_text)
             intent_score, reasons = self._intent_score(intents, chunk_text, match.chunk.metadata.get("section", ""))
+            keyword_boost, keyword_reason = self._keyword_boost(query_tokens, semantic_query, match)
             quality_score = self._quality_score(chunk_text, match.chunk.metadata.get("quality", "clean"))
             section_adjustment = self._section_adjustment(intents, broad_query, match.chunk.metadata.get("section", ""))
             total_score = (
-                (match.semantic_score * 0.35)
-                + (lexical_score * 0.35)
-                + (intent_score * 0.2)
-                + (quality_score * 0.1)
+                (match.semantic_score * 0.32)
+                + (lexical_score * 0.28)
+                + keyword_boost
+                + (intent_score * 0.18)
+                + (quality_score * 0.08)
                 + section_adjustment
             )
 
@@ -88,7 +134,7 @@ class RetrieverService:
                     semantic_score=match.semantic_score,
                     lexical_score=lexical_score,
                     quality_score=quality_score,
-                    reasons=reasons,
+                    reasons=reasons + ([keyword_reason] if keyword_reason else []),
                 )
             )
 
@@ -119,6 +165,14 @@ class RetrieverService:
             )
         return final_matches
 
+    def _query_vocabulary(self) -> set[str]:
+        known_terms: list[str] = []
+        for record in self.vector_service.records:
+            known_terms.append(record.file_name)
+            metadata_keywords = str(record.metadata.get("keywords", "")).split(",")
+            known_terms.extend(keyword for keyword in metadata_keywords if keyword.strip())
+        return build_query_vocabulary(known_terms)
+
     def _lexical_score(self, query_tokens: set[str], text: str) -> float:
         if not query_tokens:
             return 0.0
@@ -135,6 +189,29 @@ class RetrieverService:
         coverage = total_hits / max(1.0, len(query_tokens))
         density = total_hits / max(8.0, len(text_tokens))
         return min(1.0, (coverage * 0.8) + (density * 0.5))
+
+    def _keyword_boost(self, query_tokens: set[str], corrected_query: str, match: SearchMatch) -> tuple[float, str | None]:
+        text_tokens = set(extract_keywords(normalize_query_text(match.chunk.text), keep_generic_terms=True))
+        metadata_tokens = set(
+            extract_keywords(str(match.chunk.metadata.get("keywords", "")), keep_generic_terms=True)
+        )
+        file_tokens = set(extract_keywords(normalize_query_text(match.chunk.file_name), keep_generic_terms=True))
+        candidate_tokens = text_tokens | metadata_tokens | file_tokens
+        if not candidate_tokens:
+            return 0.0, None
+
+        exact_hits, fuzzy_hits = fuzzy_token_hits(query_tokens, candidate_tokens)
+        boost = min(0.18, (exact_hits * 0.035) + (fuzzy_hits * 0.02))
+
+        normalized_text = normalize_query_text(match.chunk.text)
+        if corrected_query and corrected_query in normalized_text:
+            boost += 0.08
+        elif any(token in normalized_text for token in query_tokens if len(token) >= 5):
+            boost += 0.04
+
+        if boost <= 0:
+            return 0.0, None
+        return min(0.24, boost), f"keyword-boost:{min(0.24, boost):.2f}"
 
     def _detect_intents(self, query_text: str) -> set[str]:
         intents: set[str] = set()

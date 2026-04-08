@@ -13,7 +13,7 @@ from app.services.memory import MemoryService
 from app.services.reranker import RerankerService
 from app.services.retriever import RetrieverService
 from app.services.search_service import SearchService
-from app.utils.text import extract_keywords, fuzzy_token_hits, normalize_query_text
+from app.utils.text import correct_query_spelling, extract_keywords, fuzzy_token_hits, normalize_query_text
 
 
 logger = logging.getLogger(__name__)
@@ -76,7 +76,11 @@ class RAGService:
     ) -> tuple[str, str, float, list[SearchMatch]]:
         retrieved = await self.retriever.retrieve(query, top_k=max(5, self.settings.top_k))
         effective_query = focus_query or query
-        selected = self.reranker.rerank(effective_query, retrieved, top_n=self.settings.rerank_top_n)
+        selected = self.reranker.rerank(
+            effective_query,
+            retrieved,
+            top_n=min(3, max(2, self.settings.rerank_top_n)),
+        )
         best_score = selected[0].rerank_score if selected else 0.0
 
         relevance_ok, relevance_debug = self._evaluate_selected_relevance(effective_query, selected)
@@ -168,7 +172,7 @@ class RAGService:
             yield {"type": "done"}
 
     def _prepare_query(self, query: str) -> str:
-        prepared = re.sub(r"\s+", " ", query).strip()
+        prepared, _ = correct_query_spelling(query)
         return prepared
 
     async def _run_pipeline(self, *, query: str, session_key: str, stream: bool) -> PipelineState:
@@ -232,6 +236,8 @@ class RAGService:
     def _log_request_start(self, *, session_key: str, raw_query: str, prepared_query: str, stream: bool) -> None:
         if not self.settings.rag_debug_mode:
             return
+        logger.info("Original Query: %s", raw_query)
+        logger.info("Corrected Query: %s", prepared_query)
         logger.info(
             "RAG DEBUG request_start session_id=%s stream=%s raw_query=%r prepared_query=%r",
             session_key,
@@ -340,9 +346,7 @@ class RAGService:
         return any(term in query_text for term in broad_terms)
 
     def _build_retrieval_query(self, session_id: str, query: str) -> str:
-        lowered = query.lower().strip()
-        referential = {"it", "they", "them", "that", "those", "there", "then", "this", "these", "one", "ones"}
-        if len(lowered.split()) > 6 and not any(token in referential for token in lowered.split()):
+        if not self._should_use_follow_up_context(query):
             return query
 
         recent_turns = [turn for turn in self.memory_service.recent_turns(session_id, limit=4) if turn.role == "user"]
@@ -351,6 +355,71 @@ class RAGService:
 
         previous_query = recent_turns[-1].content
         return f"{previous_query}\nFollow-up question: {query}"
+
+    def _should_use_follow_up_context(self, query: str) -> bool:
+        normalized = normalize_query_text(query)
+        if not normalized:
+            return False
+
+        tokens = normalized.split()
+        referential_terms = {"it", "its", "they", "them", "their", "that", "those", "there", "this", "these", "one", "ones"}
+        follow_up_prefixes = (
+            "what about",
+            "how about",
+            "tell me more",
+            "more about",
+            "and ",
+            "also ",
+            "then ",
+            "next ",
+            "same for",
+        )
+        short_follow_up_queries = {
+            "details",
+            "more details",
+            "timing",
+            "timings",
+            "schedule",
+            "venue",
+            "location",
+            "rules",
+            "contacts",
+            "coordinator",
+            "coordinators",
+        }
+        filler_tokens = {
+            "about",
+            "also",
+            "current",
+            "details",
+            "give",
+            "latest",
+            "more",
+            "need",
+            "now",
+            "please",
+            "present",
+            "show",
+            "tell",
+            "then",
+        }
+
+        if any(token in referential_terms for token in tokens):
+            return True
+        if any(normalized.startswith(prefix) for prefix in follow_up_prefixes):
+            return True
+        if normalized in short_follow_up_queries:
+            return True
+
+        meaningful_tokens = {
+            token
+            for token in extract_keywords(normalized, keep_generic_terms=True)
+            if token not in filler_tokens
+        }
+        if meaningful_tokens:
+            return False
+
+        return len(tokens) <= 3
 
     def _build_document_context(self, matches: list[SearchMatch], memory_context: str) -> str:
         sections: list[str] = []
@@ -418,7 +487,9 @@ class RAGService:
             retrieval_query,
             normalize_query_text(retrieval_query),
         )
+        logger.info("Retrieved Docs: %s", selected_chunks)
         logger.info("RAG DEBUG source=%s confidence=%.3f matches=%s", source, confidence, selected_chunks)
+        logger.info("Final Context: %s", self._preview_text(context, limit=700))
         logger.info(
             "RAG DEBUG context_empty=%s context_preview=%r",
             context in {"", "NO_CONTEXT_FOUND"},

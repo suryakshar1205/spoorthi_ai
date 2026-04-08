@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from difflib import SequenceMatcher, get_close_matches
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Iterable
 from uuid import uuid4
 
 from app.models.domain import ChunkRecord
@@ -103,6 +105,75 @@ GENERIC_FEST_TOKENS = {
     "technical",
 }
 
+DOMAIN_QUERY_TERMS = {
+    "adithya",
+    "ai",
+    "alumni",
+    "anitha",
+    "art",
+    "bank",
+    "bhavana",
+    "brainovision",
+    "circuit",
+    "clutch",
+    "code",
+    "coding",
+    "combat",
+    "contest",
+    "coordinator",
+    "coordinators",
+    "details",
+    "ece",
+    "event",
+    "events",
+    "faculty",
+    "finance",
+    "flashmob",
+    "hackathon",
+    "hackathons",
+    "history",
+    "hod",
+    "icici",
+    "ideathon",
+    "innovation",
+    "iot",
+    "jntuh",
+    "location",
+    "logic",
+    "mathworks",
+    "overview",
+    "partner",
+    "partners",
+    "pcb",
+    "posteriza",
+    "presentation",
+    "proto",
+    "quiz",
+    "registration",
+    "room",
+    "schedule",
+    "sponsor",
+    "sponsors",
+    "spoorthi",
+    "support",
+    "tech",
+    "technical",
+    "timing",
+    "timings",
+    "treasure",
+    "venue",
+    "where",
+    "workshop",
+    "workshops",
+}
+
+QUERY_ALIAS_EXPANSIONS: dict[str, tuple[str, ...]] = {
+    "coding contest": ("code clutch", "coding event"),
+    "coding event": ("code clutch",),
+    "hackthon": ("hackathon",),
+    "treasure hunt": ("tech treasure hunt",),
+}
+
 
 def normalize_text(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
@@ -161,6 +232,69 @@ def normalize_query_text(text: str) -> str:
     return normalized.strip()
 
 
+def build_query_vocabulary(*collections: Iterable[str]) -> set[str]:
+    vocabulary = {term for term in DOMAIN_QUERY_TERMS if len(term) >= 3}
+
+    for collection in collections:
+        for value in collection:
+            normalized = normalize_query_text(str(value))
+            for token in TOKEN_RE.findall(normalized):
+                if len(token) >= 3 and token not in STOPWORDS:
+                    vocabulary.add(token.lower())
+
+    return vocabulary
+
+
+def correct_query_spelling(
+    text: str,
+    *,
+    known_terms: Iterable[str] | None = None,
+) -> tuple[str, dict[str, str]]:
+    normalized = normalize_query_text(text)
+    if not normalized:
+        return "", {}
+
+    vocabulary = build_query_vocabulary(known_terms or ())
+    corrected_tokens: list[str] = []
+    corrections: dict[str, str] = {}
+
+    for token in normalized.split():
+        if not _should_correct_token(token, vocabulary):
+            corrected_tokens.append(token)
+            continue
+
+        candidate = _best_query_correction(token, vocabulary)
+        if candidate and candidate != token:
+            corrected_tokens.append(candidate)
+            corrections[token] = candidate
+        else:
+            corrected_tokens.append(token)
+
+    corrected_query = " ".join(corrected_tokens).strip()
+    return corrected_query, corrections
+
+
+def expand_query_aliases(text: str) -> str:
+    normalized = normalize_query_text(text)
+    if not normalized:
+        return ""
+
+    expanded_parts = [normalized]
+    for phrase, aliases in QUERY_ALIAS_EXPANSIONS.items():
+        if phrase in normalized:
+            expanded_parts.extend(aliases)
+
+    deduped_tokens: list[str] = []
+    seen: set[str] = set()
+    for part in expanded_parts:
+        for token in normalize_query_text(part).split():
+            if not token or token in seen:
+                continue
+            seen.add(token)
+            deduped_tokens.append(token)
+    return " ".join(deduped_tokens)
+
+
 def token_count(text: str) -> int:
     return len(TOKEN_RE.findall(text))
 
@@ -202,6 +336,37 @@ def fuzzy_token_hits(query_tokens: set[str], text_tokens: set[str]) -> tuple[int
             fuzzy_hits += 1
 
     return exact_hits, fuzzy_hits
+
+
+def _should_correct_token(token: str, vocabulary: set[str]) -> bool:
+    if (
+        len(token) < 4
+        or token in STOPWORDS
+        or token in vocabulary
+        or token.isdigit()
+    ):
+        return False
+    return any(term[0] == token[0] for term in vocabulary if term)
+
+
+def _best_query_correction(token: str, vocabulary: set[str]) -> str | None:
+    candidate_pool = [
+        term
+        for term in vocabulary
+        if abs(len(term) - len(token)) <= 3 and term[:1] == token[:1]
+    ]
+    if not candidate_pool:
+        return None
+
+    matches = get_close_matches(token, candidate_pool, n=1, cutoff=0.82)
+    if not matches:
+        return None
+
+    candidate = matches[0]
+    similarity = SequenceMatcher(a=token, b=candidate).ratio()
+    if similarity < 0.84:
+        return None
+    return candidate
 
 
 def sanitize_filename(name: str) -> str:

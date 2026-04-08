@@ -4,7 +4,7 @@ import logging
 
 from app.config import Settings
 from app.models.domain import SearchMatch
-from app.utils.text import extract_keywords, fuzzy_token_hits, normalize_query_text
+from app.utils.text import correct_query_spelling, expand_query_aliases, extract_keywords, fuzzy_token_hits, normalize_query_text
 
 
 logger = logging.getLogger(__name__)
@@ -18,7 +18,8 @@ class RerankerService:
         if not matches:
             return []
 
-        query_text = normalize_query_text(query)
+        query_text, _ = correct_query_spelling(query)
+        query_text = expand_query_aliases(query_text)
         query_tokens = set(extract_keywords(query_text))
         if not query_tokens:
             query_tokens = set(extract_keywords(query_text, keep_generic_terms=True))
@@ -32,6 +33,7 @@ class RerankerService:
             metadata = match.chunk.metadata
             keyword_bonus = self._keyword_bonus(query_tokens, text)
             phrase_bonus = self._phrase_bonus(query_text, text)
+            metadata_bonus = self._metadata_bonus(query_tokens, metadata)
             structure_bonus = self._section_adjustment(intents, broad_query, metadata.get("section", "general"))
             clean_bonus = 0.08 if metadata.get("quality", "clean") == "clean" else 0.0
             rerank_score = (
@@ -40,6 +42,7 @@ class RerankerService:
                 + (match.lexical_score * 0.2)
                 + keyword_bonus
                 + phrase_bonus
+                + metadata_bonus
                 + structure_bonus
                 + clean_bonus
             )
@@ -83,6 +86,14 @@ class RerankerService:
             if phrase in text:
                 return 0.16
         return 0.0
+
+    def _metadata_bonus(self, query_tokens: set[str], metadata: dict[str, object]) -> float:
+        metadata_terms = str(metadata.get("keywords", ""))
+        metadata_tokens = set(extract_keywords(metadata_terms, keep_generic_terms=True))
+        if not metadata_tokens:
+            return 0.0
+        exact_hits, fuzzy_hits = fuzzy_token_hits(query_tokens, metadata_tokens)
+        return min(0.12, (exact_hits * 0.03) + (fuzzy_hits * 0.02))
 
     def _detect_intents(self, query_text: str) -> set[str]:
         intents: set[str] = set()

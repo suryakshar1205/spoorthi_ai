@@ -6,7 +6,16 @@ import logging
 import re
 
 from app.config import Settings
-from app.utils.text import extract_keywords, fuzzy_token_hits, normalize_query_text, normalize_source_text, normalize_text, token_matches
+from app.utils.text import (
+    correct_query_spelling,
+    expand_query_aliases,
+    extract_keywords,
+    fuzzy_token_hits,
+    normalize_query_text,
+    normalize_source_text,
+    normalize_text,
+    token_matches,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -92,13 +101,31 @@ FIELD_ALIASES = {
 }
 
 FALLBACK_ANSWER = "I don't have that information. Please contact the organizers."
-STRICT_PROMPT_TEMPLATE = """You are Spoorthi Chatbot, an assistant for a technical fest.
+LEGACY_STRICT_PROMPT_TEMPLATE = """You are Spoorthi Chatbot, an assistant for a technical fest.
 
 IMPORTANT:
 - You MUST answer ONLY from the provided context
 - Do NOT use external knowledge
 - If context does not contain answer, say:
   'I don’t have that information. Please contact the organizers.'
+
+Context:
+{context}
+
+Question:
+{question}
+
+Answer:"""
+
+STRICT_PROMPT_TEMPLATE = """You are Spoorthi Chatbot, an assistant for a technical fest.
+
+IMPORTANT:
+- You MUST answer ONLY from the provided context
+- Do NOT use external knowledge
+- Do NOT guess, infer missing facts, or hallucinate details
+- If context does not contain answer, say:
+  'I don't have that information. Please contact the organizers.'
+- If a requested field such as location or timing is missing, say it is not specified in the provided context.
 
 Context:
 {context}
@@ -152,7 +179,8 @@ class LocalProvider:
         if not retrieved_context.strip():
             return FALLBACK_ANSWER
 
-        query_text = normalize_query_text(query)
+        corrected_query, _ = correct_query_spelling(query)
+        query_text = expand_query_aliases(corrected_query)
         query_tokens = set(extract_keywords(query_text))
         if not query_tokens:
             query_tokens = set(extract_keywords(query_text, keep_generic_terms=True))
@@ -191,12 +219,12 @@ class LocalProvider:
             if answer:
                 return answer
 
-        if any(term in query_text for term in ("where", "venue", "location", "hall", "room", "auditorium", "lab")):
+        if self._has_explicit_location_intent(query_text):
             answer = self._answer_location(query_text, query_tokens, schedule_items, event_cards, fields, sentences)
             if answer:
                 return answer
 
-        if any(term in query_text for term in ("rule", "rules", "allowed", "coding contest")):
+        if any(term in query_text for term in ("rule", "rules", "allowed")):
             answer = self._answer_rules(query_text, query_tokens, event_cards, fields, sentences)
             if answer:
                 return answer
@@ -752,6 +780,13 @@ class LocalProvider:
         has_listing_word = any(term in query_text for term in ("happening", "available", "list", "show", "tell", "ongoing"))
         return has_event_word and has_listing_word
 
+    def _has_explicit_location_intent(self, query_text: str) -> bool:
+        if any(term in query_text for term in ("where", "venue", "location", "hall", "auditorium", "lab")):
+            return True
+        if "room" in query_text and any(term in query_text for term in ("where", "which", "locat", "venue")):
+            return True
+        return False
+
     def _answer_schedule(
         self,
         query_text: str,
@@ -816,7 +851,16 @@ class LocalProvider:
     ) -> str | None:
         best_card = self._best_event_card(query_tokens, event_cards, query_text=query_text)
         if best_card:
-            return self._format_event_card(best_card, heading=f"{best_card.title} Details:")
+            location_value = best_card.fields.get("location") or best_card.fields.get("venue")
+            if location_value:
+                lines = [f"- Location: {location_value}"]
+                if best_card.fields.get("time"):
+                    lines.append(f"- Time: {best_card.fields['time']}")
+                return f"{best_card.title} Location Details:\n" + "\n".join(lines)
+            return (
+                f"{best_card.title} Location Details:\n"
+                "- Location: Not specified in the current context."
+            )
 
         ranked = self._rank_schedule_items(query_tokens, schedule_items)
         if ranked and ranked[0][0] >= 0.35:
