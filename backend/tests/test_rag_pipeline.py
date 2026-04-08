@@ -18,6 +18,14 @@ from app.services.vector_service import VectorService
 from app.utils.text import build_chunk_records, token_count
 
 
+EXPECTED_FALLBACK_WITH_CONTACTS = (
+    "I don't have that information. Please contact the organizers.\n\n"
+    "You can reach the organizers using these details from the current knowledge base:\n"
+    "- Faculty Coordinator: Dr. Anitha Sheela Kancharla\n"
+    "- Student Coordinator: Naveen, Nikitha, Aditya Singh, Yashashwini"
+)
+
+
 @pytest.mark.asyncio
 async def test_rag_pipeline_validation_queries(tmp_path: Path) -> None:
     settings = Settings(
@@ -93,9 +101,7 @@ async def test_rag_pipeline_validation_queries(tmp_path: Path) -> None:
     assert "Adithya Varma" in finance_team.answer or "Eshwar" in finance_team.answer
     assert "Key Faculty Team Details" in hod.answer or "Here's what I found:" in hod.answer
     assert "Dr. T. Madhavi Kumari" in hod.answer
-    assert "Please contact the organizers" in unknown.answer
-    assert "Faculty Coordinator: Dr. Anitha Sheela Kancharla" in unknown.answer
-    assert "Student Coordinator: Naveen, Nikitha, Aditya Singh, Yashashwini" in unknown.answer
+    assert unknown.answer == EXPECTED_FALLBACK_WITH_CONTACTS
 
 
 @pytest.mark.asyncio
@@ -183,8 +189,7 @@ async def test_fallback_skips_llm_for_unknown_query(tmp_path: Path) -> None:
     unknown = await rag_service.answer_query("What is the hostel bus route for visitors?", session_id="test-session")
 
     assert guard_llm.called is False
-    assert "Please contact the organizers" in unknown.answer
-    assert "Faculty Coordinator: Dr. Anitha Sheela Kancharla" in unknown.answer
+    assert unknown.answer == EXPECTED_FALLBACK_WITH_CONTACTS
 
 
 @pytest.mark.asyncio

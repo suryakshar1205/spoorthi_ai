@@ -89,15 +89,20 @@ export function ChatShell() {
   const { pushToast } = useToast();
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const defaultQuickQuestionCategory = quickQuestionGroups[0]?.label ?? "";
 
   const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage]);
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
   const [input, setInput] = useState("");
+  const [selectedQuickCategory, setSelectedQuickCategory] = useState(defaultQuickQuestionCategory);
   const [selectedQuickQuestion, setSelectedQuickQuestion] = useState("");
   const [statusText, setStatusText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceAvailable, setVoiceAvailable] = useState(false);
+
+  const activeQuickQuestionGroup =
+    quickQuestionGroups.find((group) => group.label === selectedQuickCategory) ?? quickQuestionGroups[0];
 
   useEffect(() => {
     clearChatHistory();
@@ -235,6 +240,7 @@ export function ChatShell() {
     setMessages([welcomeMessage]);
     setSessionId(crypto.randomUUID());
     setInput("");
+    setSelectedQuickCategory(defaultQuickQuestionCategory);
     setSelectedQuickQuestion("");
     setStatusText("");
     clearChatHistory();
@@ -299,36 +305,61 @@ export function ChatShell() {
 
             <div className="flex-1 space-y-4 overflow-y-auto px-4 py-5 sm:px-5">
               <div className="rounded-[20px] border border-stone-200/70 bg-white/70 p-3 dark:border-white/10 dark:bg-white/5">
-                <label
-                  htmlFor="quick-question-select"
-                  className="mb-2 block text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400"
-                >
-                  Quick Questions
-                </label>
-                <select
-                  id="quick-question-select"
-                  value={selectedQuickQuestion}
-                  onChange={(event) => {
-                    const nextQuestion = event.target.value;
-                    setSelectedQuickQuestion("");
-                    if (nextQuestion) {
-                      void submitQuestion(nextQuestion);
-                    }
-                  }}
-                  disabled={isLoading}
-                  className="quick-question-select w-full rounded-xl border border-stone-300/70 bg-white px-3 py-2.5 text-sm text-stone-800 outline-none transition focus:border-ember dark:border-white/10 dark:bg-white/5 dark:text-stone-100"
-                >
-                  <option value="">Choose a prepared question...</option>
-                  {quickQuestionGroups.map((group) => (
-                    <optgroup key={group.label} label={group.label}>
-                      {group.questions.map((question) => (
-                        <option key={question} value={question}>
-                          {question}
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <label
+                      htmlFor="quick-question-category"
+                      className="mb-2 block text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400"
+                    >
+                      Quick Question Category
+                    </label>
+                    <select
+                      id="quick-question-category"
+                      value={selectedQuickCategory}
+                      onChange={(event) => {
+                        setSelectedQuickCategory(event.target.value);
+                        setSelectedQuickQuestion("");
+                      }}
+                      disabled={isLoading}
+                      className="quick-question-select w-full rounded-xl border border-stone-300/70 bg-white px-3 py-2.5 text-sm text-stone-800 outline-none transition focus:border-ember dark:border-white/10 dark:bg-white/5 dark:text-stone-100"
+                    >
+                      {quickQuestionGroups.map((group) => (
+                        <option key={group.label} value={group.label}>
+                          {group.label}
                         </option>
                       ))}
-                    </optgroup>
-                  ))}
-                </select>
+                    </select>
+                  </div>
+
+                  <div>
+                    <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400">
+                      Pick a Question
+                    </p>
+                    <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+                      {activeQuickQuestionGroup?.questions.map((question) => {
+                        const isActive = selectedQuickQuestion === question;
+                        return (
+                          <button
+                            key={question}
+                            type="button"
+                            onClick={() => {
+                              setSelectedQuickQuestion(question);
+                              void submitQuestion(question);
+                            }}
+                            disabled={isLoading}
+                            className={`w-full rounded-2xl border px-3 py-3 text-left text-sm transition ${
+                              isActive
+                                ? "border-ember bg-ember/10 text-ember dark:border-ember dark:bg-ember/15 dark:text-orange-200"
+                                : "border-stone-200/80 bg-white/85 text-stone-800 hover:border-ocean hover:text-ocean dark:border-white/10 dark:bg-white/5 dark:text-stone-100 dark:hover:border-cyan-300 dark:hover:text-cyan-200"
+                            } disabled:cursor-not-allowed disabled:opacity-60`}
+                          >
+                            {question}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <AnimatePresence initial={false}>

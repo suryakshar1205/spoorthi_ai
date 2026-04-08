@@ -504,15 +504,14 @@ class RAGService:
         if not contact_lines:
             contact_lines = await self._lookup_contact_lines()
 
-        if not contact_lines:
+        primary_lines = self._select_primary_contact_lines(contact_lines)
+        if not primary_lines:
             return answer
-
-        prioritized_lines = self._prioritize_contact_lines(contact_lines)
 
         return (
             f"{FALLBACK_ANSWER}\n\n"
             "You can reach the organizers using these details from the current knowledge base:\n"
-            + "\n".join(f"- {line}" for line in prioritized_lines[:4])
+            + "\n".join(f"- {line}" for line in primary_lines)
         )
 
     async def _lookup_contact_lines(self) -> list[str]:
@@ -658,6 +657,24 @@ class RAGService:
             seen.add(normalized)
             deduped.append(line)
         return deduped
+
+    def _select_primary_contact_lines(self, lines: list[str]) -> list[str]:
+        prioritized_lines = self._prioritize_contact_lines(lines)
+        faculty_line = next(
+            (line for line in prioritized_lines if line.lower().strip().startswith("faculty coordinator:")),
+            None,
+        )
+        student_line = next(
+            (line for line in prioritized_lines if line.lower().strip().startswith("student coordinator:")),
+            None,
+        )
+
+        selected: list[str] = []
+        if faculty_line:
+            selected.append(faculty_line)
+        if student_line:
+            selected.append(student_line)
+        return selected
 
     def _normalize_label(self, label: str) -> str:
         normalized = self._normalize_contact_value(label)
