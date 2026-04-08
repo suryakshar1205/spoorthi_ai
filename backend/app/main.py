@@ -279,6 +279,10 @@ atexit.register(_stop_frontend)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
+    if settings.rag_debug_mode:
+        logging.getLogger(__name__).info(
+            "RAG debug mode is enabled. Query, retrieval, prompt, and response traces will be logged."
+        )
     embedding_service = EmbeddingService(settings)
     vector_service = VectorService(settings, embedding_service=embedding_service)
     await vector_service.initialize()

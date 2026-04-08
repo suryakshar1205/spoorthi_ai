@@ -1,11 +1,28 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.utils.text import normalize_text
 
 
 class UserQuery(BaseModel):
     query: str = Field(min_length=2, max_length=2000)
     session_id: str | None = Field(default=None, min_length=8, max_length=120)
+
+    @field_validator("query", mode="before")
+    @classmethod
+    def normalize_query_input(cls, value: object) -> object:
+        if not isinstance(value, str):
+            return value
+        return normalize_text(value)
+
+    @field_validator("session_id", mode="before")
+    @classmethod
+    def normalize_session_id(cls, value: object) -> object:
+        if value is None or not isinstance(value, str):
+            return value
+        normalized = normalize_text(value)
+        return normalized or None
 
 
 class AskResponse(BaseModel):

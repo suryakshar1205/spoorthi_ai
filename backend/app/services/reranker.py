@@ -98,7 +98,27 @@ class RerankerService:
             intents.add("rules")
         if any(
             term in query_text
-            for term in ("workshop", "presentation", "expo", "challenge", "quiz", "hackathon", "contest", "event", "events", "activities")
+            for term in (
+                "workshop",
+                "presentation",
+                "expo",
+                "challenge",
+                "quiz",
+                "hackathon",
+                "contest",
+                "event",
+                "events",
+                "activities",
+                "art room",
+                "tech room",
+                "flashmob",
+                "ideathon",
+                "posteriza",
+                "logic combat",
+                "proto circuit",
+                "treasure hunt",
+                "code clutch",
+            )
         ):
             intents.add("events")
         if any(term in query_text for term in ("history", "legacy", "about", "overview", "what is")):
@@ -165,6 +185,15 @@ class RerankerService:
             return True
 
         broad_terms = (
+            "list events",
+            "list all events",
+            "list all the events",
+            "show events",
+            "show me all the events",
+            "tell me all the events",
+            "all events",
+            "all the events",
+            "event list",
             "what events are happening",
             "today",
             "schedule",

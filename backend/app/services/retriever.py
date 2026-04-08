@@ -30,6 +30,22 @@ class RetrieverService:
         query_tokens = self._expand_query_tokens(query_tokens, query_text, intents, broad_query)
 
         candidates_by_id = {match.chunk.id: match for match in semantic_candidates}
+        if self.settings.rag_debug_mode:
+            logger.info(
+                "RAG DEBUG retriever_input query=%r top_k=%s semantic_candidates=%s",
+                query,
+                limit,
+                [
+                    {
+                        "file": match.chunk.file_name,
+                        "section": match.chunk.metadata.get("section", "general"),
+                        "semantic_score": round(match.semantic_score, 4),
+                        "preview": self._preview_text(match.chunk.text),
+                    }
+                    for match in semantic_candidates[: min(5, len(semantic_candidates))]
+                ],
+            )
+
         if len(self.vector_service.records) <= 300:
             for record in self.vector_service.records:
                 candidates_by_id.setdefault(
@@ -84,6 +100,23 @@ class RetrieverService:
             query,
             [f"{item.chunk.file_name}:{item.chunk.metadata.get('section', 'general')}:{item.score:.2f}" for item in final_matches],
         )
+        if self.settings.rag_debug_mode:
+            logger.info(
+                "RAG DEBUG retrieved_documents query=%r docs=%s",
+                query,
+                [
+                    {
+                        "file": item.chunk.file_name,
+                        "section": item.chunk.metadata.get("section", "general"),
+                        "score": round(item.score, 4),
+                        "semantic_score": round(item.semantic_score, 4),
+                        "lexical_score": round(item.lexical_score, 4),
+                        "reasons": item.reasons,
+                        "preview": self._preview_text(item.chunk.text),
+                    }
+                    for item in final_matches
+                ],
+            )
         return final_matches
 
     def _lexical_score(self, query_tokens: set[str], text: str) -> float:
@@ -132,7 +165,28 @@ class RetrieverService:
             intents.add("rules")
         if any(
             term in query_text
-            for term in ("workshop", "presentation", "expo", "challenge", "quiz", "hackathon", "coding contest", "beginners", "event", "events", "activities")
+            for term in (
+                "workshop",
+                "presentation",
+                "expo",
+                "challenge",
+                "quiz",
+                "hackathon",
+                "coding contest",
+                "beginners",
+                "event",
+                "events",
+                "activities",
+                "art room",
+                "tech room",
+                "flashmob",
+                "ideathon",
+                "posteriza",
+                "logic combat",
+                "proto circuit",
+                "treasure hunt",
+                "code clutch",
+            )
         ):
             intents.add("events")
         if any(term in query_text for term in ("history", "legacy", "about", "overview", "what is")):
@@ -270,6 +324,15 @@ class RetrieverService:
             return True
 
         broad_terms = (
+            "list events",
+            "list all events",
+            "list all the events",
+            "show events",
+            "show me all the events",
+            "tell me all the events",
+            "all events",
+            "all the events",
+            "event list",
             "what events are happening",
             "today",
             "schedule",
@@ -281,3 +344,9 @@ class RetrieverService:
             "tell me about",
         )
         return any(term in query_text for term in broad_terms)
+
+    def _preview_text(self, text: str, limit: int = 160) -> str:
+        compact = " ".join(text.split())
+        if len(compact) <= limit:
+            return compact
+        return compact[:limit].rstrip() + "..."

@@ -71,6 +71,7 @@ class Settings:
     temperature: float = _get_float("LLM_TEMPERATURE", 0.35)
     max_tokens: int = _get_int("LLM_MAX_TOKENS", 700)
     response_stream_delay_ms: int = _get_int("RESPONSE_STREAM_DELAY_MS", 10)
+    rag_debug_mode: bool = _get_bool("RAG_DEBUG_MODE", False)
     similarity_threshold: float = _get_float("SIMILARITY_THRESHOLD", 0.52)
     embedding_dimension: int = _get_int("EMBEDDING_DIMENSION", 512)
     chunk_size: int = _get_int("CHUNK_SIZE", 320)

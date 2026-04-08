@@ -5,7 +5,7 @@ import re
 from uuid import uuid4
 
 from app.config import Settings
-from app.models.domain import KnowledgeSource, SearchMatch
+from app.models.domain import KnowledgeSource, PipelineState, SearchMatch
 from app.models.schemas import AskResponse
 from app.services.chatbot_logic import route_predefined_query
 from app.services.llm_service import FALLBACK_ANSWER, LLMService
@@ -13,6 +13,7 @@ from app.services.memory import MemoryService
 from app.services.reranker import RerankerService
 from app.services.retriever import RetrieverService
 from app.services.search_service import SearchService
+from app.utils.text import extract_keywords, fuzzy_token_hits, normalize_query_text
 
 
 logger = logging.getLogger(__name__)
@@ -45,45 +46,58 @@ class RAGService:
 
     async def answer_query(self, query: str, session_id: str | None = None) -> AskResponse:
         session_key = session_id or str(uuid4())
-        direct_answer = route_predefined_query(query)
-        if direct_answer:
-            self.memory_service.append_turn(session_key, "user", query)
-            self.memory_service.append_turn(session_key, "assistant", direct_answer)
-            self._log_answer(query, KnowledgeSource.DOCUMENT.value, [], direct_answer)
-            return AskResponse(
-                answer=direct_answer,
-                source=KnowledgeSource.DOCUMENT.value,
-                confidence=1.0,
-                session_id=session_key,
-            )
+        state = await self._run_pipeline(query=query, session_key=session_key, stream=False)
+        answer = await self._resolve_answer(state)
 
-        retrieval_query = self._build_retrieval_query(session_key, query)
-        context, source, confidence, selected = await self.retrieve_context(retrieval_query, session_key)
-        answer = await self.llm_service.generate_response(context=context, query=query)
-        answer = await self._augment_fallback_with_contacts(answer, context)
-
-        self.memory_service.append_turn(session_key, "user", query)
+        self.memory_service.append_turn(session_key, "user", state.prepared_query)
         self.memory_service.append_turn(session_key, "assistant", answer)
-        self._log_answer(query, source, selected, answer)
+        self._log_answer(state.prepared_query, state.source, state.matches, answer)
+        self._log_request_complete(
+            session_key=session_key,
+            query=state.prepared_query,
+            source=state.source,
+            confidence=state.confidence,
+            answer=answer,
+            stream=False,
+        )
 
-        return AskResponse(answer=answer, source=source, confidence=confidence, session_id=session_key)
+        return AskResponse(
+            answer=answer,
+            source=state.source,
+            confidence=state.confidence,
+            session_id=session_key,
+        )
 
     async def retrieve_context(
         self,
         query: str,
         session_id: str | None = None,
+        focus_query: str | None = None,
     ) -> tuple[str, str, float, list[SearchMatch]]:
         retrieved = await self.retriever.retrieve(query, top_k=max(5, self.settings.top_k))
-        selected = self.reranker.rerank(query, retrieved, top_n=self.settings.rerank_top_n)
+        effective_query = focus_query or query
+        selected = self.reranker.rerank(effective_query, retrieved, top_n=self.settings.rerank_top_n)
         best_score = selected[0].rerank_score if selected else 0.0
 
-        if selected and best_score >= self.settings.similarity_threshold:
+        relevance_ok, relevance_debug = self._evaluate_selected_relevance(effective_query, selected)
+
+        if selected and best_score >= self.settings.similarity_threshold and relevance_ok:
             memory_context = self.memory_service.format_context(session_id or "", limit=self.settings.memory_turn_window)
             context = self._build_document_context(selected, memory_context)
             return context, KnowledgeSource.DOCUMENT.value, min(1.0, best_score), selected
 
+        if self.settings.rag_debug_mode:
+            logger.info(
+                "RAG DEBUG fallback_detection retrieval_query=%r focus_query=%r reason=%s best_score=%.3f debug=%s",
+                query,
+                effective_query,
+                "below-threshold" if selected and best_score < self.settings.similarity_threshold else "low-relevance",
+                best_score,
+                relevance_debug,
+            )
+
         if self.settings.use_internet_fallback:
-            internet_context = await self.search_service.search_context(query)
+            internet_context = await self.search_service.search_context(effective_query)
             if internet_context != "NO_CONTEXT_FOUND":
                 memory_context = self.memory_service.format_context(session_id or "", limit=self.settings.memory_turn_window)
                 context = self._build_internet_context(internet_context, memory_context)
@@ -93,47 +107,231 @@ class RAGService:
 
     async def stream_answer(self, query: str, session_id: str | None = None):
         session_key = session_id or str(uuid4())
-        direct_answer = route_predefined_query(query)
-        if direct_answer:
+        state = await self._run_pipeline(query=query, session_key=session_key, stream=True)
+        if state.direct_answer:
             yield {"type": "status", "message": "Spoorthi Chatbot is typing..."}
             yield {"type": "meta", "session_id": session_key}
-            for token in re.findall(r"\S+\s*", direct_answer):
+            for token in re.findall(r"\S+\s*", state.direct_answer):
                 yield {"type": "token", "content": token}
-            self.memory_service.append_turn(session_key, "user", query)
-            self.memory_service.append_turn(session_key, "assistant", direct_answer)
-            self._log_answer(query, KnowledgeSource.DOCUMENT.value, [], direct_answer)
+            self.memory_service.append_turn(session_key, "user", state.prepared_query)
+            self.memory_service.append_turn(session_key, "assistant", state.direct_answer)
+            self._log_answer(state.prepared_query, state.source, state.matches, state.direct_answer)
+            self._log_request_complete(
+                session_key=session_key,
+                query=state.prepared_query,
+                source=state.source,
+                confidence=state.confidence,
+                answer=state.direct_answer,
+                stream=True,
+            )
             yield {"type": "done"}
             return
 
-        retrieval_query = self._build_retrieval_query(session_key, query)
-
         try:
             yield {"type": "status", "message": "Spoorthi Chatbot is typing..."}
-            context, source, confidence, selected = await self.retrieve_context(retrieval_query, session_key)
-            yield {"type": "meta", "source": source, "confidence": confidence, "session_id": session_key}
+            yield {
+                "type": "meta",
+                "source": state.source,
+                "confidence": state.confidence,
+                "session_id": session_key,
+            }
 
             # If no relevant context is found, enrich the fallback with organizer contacts when available.
-            if context == "NO_CONTEXT_FOUND":
-                answer = await self._augment_fallback_with_contacts(FALLBACK_ANSWER, context)
+            if state.should_fallback:
+                answer = await self._augment_fallback_with_contacts(FALLBACK_ANSWER, state.context)
                 for token in re.findall(r"\S+\s*", answer):
                     yield {"type": "token", "content": token}
             else:
                 answer_parts: list[str] = []
-                async for token in self.llm_service.stream_response(context=context, query=query):
+                async for token in self.llm_service.stream_response(context=state.context, query=state.prepared_query):
                     answer_parts.append(token)
                     yield {"type": "token", "content": token}
 
                 answer = "".join(answer_parts).strip() or FALLBACK_ANSWER
-                answer = await self._augment_fallback_with_contacts(answer, context)
+                answer = await self._augment_fallback_with_contacts(answer, state.context)
 
-            self.memory_service.append_turn(session_key, "user", query)
+            self.memory_service.append_turn(session_key, "user", state.prepared_query)
             self.memory_service.append_turn(session_key, "assistant", answer)
-            self._log_answer(query, source, selected, answer)
+            self._log_answer(state.prepared_query, state.source, state.matches, answer)
+            self._log_request_complete(
+                session_key=session_key,
+                query=state.prepared_query,
+                source=state.source,
+                confidence=state.confidence,
+                answer=answer,
+                stream=True,
+            )
             yield {"type": "done"}
         except Exception as exc:
-            logger.exception("Streaming answer failed for query=%r", query)
+            logger.exception("Streaming answer failed for query=%r", state.prepared_query)
             yield {"type": "error", "message": str(exc)}
             yield {"type": "done"}
+
+    def _prepare_query(self, query: str) -> str:
+        prepared = re.sub(r"\s+", " ", query).strip()
+        return prepared
+
+    async def _run_pipeline(self, *, query: str, session_key: str, stream: bool) -> PipelineState:
+        raw_query = query
+        prepared_query = self._prepare_query(raw_query)
+        self._log_request_start(
+            session_key=session_key,
+            raw_query=raw_query,
+            prepared_query=prepared_query,
+            stream=stream,
+        )
+
+        direct_answer = route_predefined_query(prepared_query)
+        if direct_answer:
+            return PipelineState(
+                session_id=session_key,
+                raw_query=raw_query,
+                prepared_query=prepared_query,
+                retrieval_query=prepared_query,
+                context="DIRECT_ANSWER",
+                source=KnowledgeSource.DOCUMENT.value,
+                confidence=1.0,
+                direct_answer=direct_answer,
+            )
+
+        retrieval_query = self._build_retrieval_query(session_key, prepared_query)
+        context, source, confidence, selected = await self.retrieve_context(
+            retrieval_query,
+            session_key,
+            focus_query=prepared_query,
+        )
+        self._log_context_flow(
+            raw_query=raw_query,
+            query=prepared_query,
+            retrieval_query=retrieval_query,
+            source=source,
+            confidence=confidence,
+            matches=selected,
+            context=context,
+        )
+        return PipelineState(
+            session_id=session_key,
+            raw_query=raw_query,
+            prepared_query=prepared_query,
+            retrieval_query=retrieval_query,
+            context=context,
+            source=source,
+            confidence=confidence,
+            matches=selected,
+        )
+
+    async def _resolve_answer(self, state: PipelineState) -> str:
+        if state.direct_answer:
+            return state.direct_answer
+        if state.should_fallback:
+            return await self._augment_fallback_with_contacts(FALLBACK_ANSWER, state.context)
+
+        answer = await self.llm_service.generate_response(context=state.context, query=state.prepared_query)
+        return await self._augment_fallback_with_contacts(answer, state.context)
+
+    def _log_request_start(self, *, session_key: str, raw_query: str, prepared_query: str, stream: bool) -> None:
+        if not self.settings.rag_debug_mode:
+            return
+        logger.info(
+            "RAG DEBUG request_start session_id=%s stream=%s raw_query=%r prepared_query=%r",
+            session_key,
+            stream,
+            raw_query,
+            prepared_query,
+        )
+
+    def _log_request_complete(
+        self,
+        *,
+        session_key: str,
+        query: str,
+        source: str,
+        confidence: float,
+        answer: str,
+        stream: bool,
+    ) -> None:
+        if not self.settings.rag_debug_mode:
+            return
+        logger.info(
+            "RAG DEBUG request_complete session_id=%s stream=%s source=%s confidence=%.3f query=%r answer_preview=%r",
+            session_key,
+            stream,
+            source,
+            confidence,
+            query,
+            self._preview_text(answer, limit=260),
+        )
+
+    def _evaluate_selected_relevance(self, query: str, matches: list[SearchMatch]) -> tuple[bool, dict[str, object]]:
+        if not matches:
+            return False, {"reason": "no-matches"}
+
+        query_text = normalize_query_text(query)
+        query_tokens = set(extract_keywords(query_text))
+        if not query_tokens:
+            query_tokens = set(extract_keywords(query_text, keep_generic_terms=True))
+        if not query_tokens:
+            return False, {"reason": "no-query-tokens"}
+
+        combined_text = "\n".join(match.chunk.text for match in matches)
+        combined_tokens = set(extract_keywords(normalize_query_text(combined_text), keep_generic_terms=True))
+        exact_hits, fuzzy_hits = fuzzy_token_hits(query_tokens, combined_tokens)
+        total_hits = exact_hits + (fuzzy_hits * 0.65)
+        coverage = total_hits / max(1.0, len(query_tokens))
+        best_rerank = max(match.rerank_score or match.score for match in matches)
+        best_lexical = max(match.lexical_score for match in matches)
+        sections = {match.chunk.metadata.get("section", "general") for match in matches}
+        broad_query = self._is_broad_query(query_text)
+
+        section_hint = False
+        if broad_query and any(term in query_text for term in ("event", "events", "activity", "activities", "schedule", "timing", "happening")):
+            section_hint = bool(sections & {"events", "schedule", "venue"})
+        elif any(term in query_text for term in ("overview", "about", "history", "what is")):
+            section_hint = bool(sections & {"history", "general"})
+        elif any(term in query_text for term in ("contact", "coordinator", "faculty", "student", "organizer", "phone", "email")):
+            section_hint = bool(sections & {"contact", "general"})
+
+        is_relevant = (
+            (coverage >= 0.22 and (best_lexical >= 0.08 or best_rerank >= self.settings.similarity_threshold))
+            or (broad_query and section_hint and best_rerank >= max(self.settings.similarity_threshold, 0.5))
+        )
+
+        return is_relevant, {
+            "coverage": round(coverage, 4),
+            "exact_hits": exact_hits,
+            "fuzzy_hits": fuzzy_hits,
+            "best_rerank": round(best_rerank, 4),
+            "best_lexical": round(best_lexical, 4),
+            "sections": sorted(sections),
+            "broad_query": broad_query,
+            "section_hint": section_hint,
+        }
+
+    def _is_broad_query(self, query_text: str) -> bool:
+        if query_text.strip() in {"event", "events", "activity", "activities"}:
+            return True
+
+        broad_terms = (
+            "list events",
+            "list all events",
+            "list all the events",
+            "show events",
+            "show me all the events",
+            "tell me all the events",
+            "all events",
+            "all the events",
+            "event list",
+            "what events are happening",
+            "today",
+            "schedule",
+            "agenda",
+            "timing of workshops",
+            "suggest some events",
+            "beginner",
+            "overview",
+            "tell me about",
+        )
+        return any(term in query_text for term in broad_terms)
 
     def _build_retrieval_query(self, session_id: str, query: str) -> str:
         lowered = query.lower().strip()
@@ -176,6 +374,49 @@ class RAGService:
             source,
             [f"{match.chunk.file_name}:{match.chunk.metadata.get('section', 'general')}:{match.rerank_score or match.score:.2f}" for match in matches],
             answer[:220],
+        )
+
+    def _log_context_flow(
+        self,
+        *,
+        raw_query: str,
+        query: str,
+        retrieval_query: str,
+        source: str,
+        confidence: float,
+        matches: list[SearchMatch],
+        context: str,
+    ) -> None:
+        if not self.settings.rag_debug_mode:
+            return
+
+        normalized_query = normalize_query_text(query)
+        selected_chunks = [
+            {
+                "file": match.chunk.file_name,
+                "section": match.chunk.metadata.get("section", "general"),
+                "score": round(match.rerank_score or match.score, 4),
+                "preview": self._preview_text(match.chunk.text, limit=180),
+            }
+            for match in matches
+        ]
+
+        logger.info(
+            "RAG DEBUG input raw_query=%r prepared_query=%r normalized_query=%r",
+            raw_query,
+            query,
+            normalized_query,
+        )
+        logger.info(
+            "RAG DEBUG retrieval_query=%r normalized_retrieval_query=%r",
+            retrieval_query,
+            normalize_query_text(retrieval_query),
+        )
+        logger.info("RAG DEBUG source=%s confidence=%.3f matches=%s", source, confidence, selected_chunks)
+        logger.info(
+            "RAG DEBUG context_empty=%s context_preview=%r",
+            context in {"", "NO_CONTEXT_FOUND"},
+            self._preview_text(context, limit=700),
         )
 
     async def _augment_fallback_with_contacts(self, answer: str, context: str) -> str:
@@ -356,3 +597,9 @@ class RAGService:
         normalized = re.sub(r"\s+", " ", phone).strip()
         normalized = normalized.strip(" -|:;,.")
         return normalized
+
+    def _preview_text(self, text: str, *, limit: int) -> str:
+        compact = re.sub(r"\s+", " ", text).strip()
+        if len(compact) <= limit:
+            return compact
+        return compact[:limit].rstrip() + "..."

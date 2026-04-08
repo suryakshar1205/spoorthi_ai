@@ -26,6 +26,7 @@ QUERY_REPLACEMENTS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\bevnts?\b", re.IGNORECASE), " events "),
     (re.compile(r"\bco\s*[- ]?\s*ord(?:\s*[- ]?\s*inator)?s?\b", re.IGNORECASE), " coordinator "),
     (re.compile(r"\bcoords?\b", re.IGNORECASE), " coordinator "),
+    (re.compile(r"\bcords?\b", re.IGNORECASE), " coordinator "),
     (re.compile(r"\bfacult\b", re.IGNORECASE), " faculty "),
     (re.compile(r"\bstud\s*coord\b", re.IGNORECASE), " student coordinator "),
     (re.compile(r"\bstud\b", re.IGNORECASE), " student "),
@@ -98,7 +99,6 @@ GENERIC_FEST_TOKENS = {
     "student",
     "students",
     "symposium",
-    "tech",
     "technical",
 }
 
@@ -216,9 +216,9 @@ def timestamp_now() -> str:
 def semantic_chunk_text(
     text: str,
     *,
-    target_tokens: int = 320,
-    min_tokens: int = 180,
-    max_tokens: int = 420,
+    target_tokens: int = 300,
+    min_tokens: int = 200,
+    max_tokens: int = 400,
 ) -> list[str]:
     normalized = normalize_source_text(text)
     if not normalized:
@@ -263,7 +263,7 @@ def semantic_chunk_text(
         if chunks and current_tokens < min_tokens:
             trailing_text = "\n\n".join(current_blocks).strip()
             merged = f"{chunks[-1]}\n\n{trailing_text}".strip()
-            if token_count(merged) <= max_tokens + min_tokens // 2:
+            if token_count(merged) <= max_tokens:
                 chunks[-1] = merged
             else:
                 chunks.append("\n\n".join(current_blocks).strip())
@@ -322,7 +322,7 @@ def _split_large_block(block: str, *, max_tokens: int, min_tokens: int) -> list[
     if current:
         if pieces and current_tokens < min_tokens:
             merged = f"{pieces[-1]} {' '.join(current)}".strip()
-            if token_count(merged) <= max_tokens + min_tokens // 3:
+            if token_count(merged) <= max_tokens:
                 pieces[-1] = merged
             else:
                 pieces.append(" ".join(current).strip())
@@ -395,11 +395,20 @@ def build_chunk_records(
     overlap: int,
     metadata: dict[str, str] | None = None,
 ) -> list[ChunkRecord]:
-    del chunk_size
     del overlap
 
+    target_tokens = min(360, max(220, int(chunk_size)))
+    min_tokens = max(180, target_tokens - 120)
+    max_tokens = min(400, target_tokens + 80)
+
     created_at = timestamp_now()
-    chunks = semantic_chunk_text(text)
+    chunks = semantic_chunk_text(
+        text,
+        target_tokens=target_tokens,
+        min_tokens=min_tokens,
+        max_tokens=max_tokens,
+    )
+    chunk_total = len(chunks)
     return [
         ChunkRecord(
             id=str(uuid4()),
@@ -408,9 +417,15 @@ def build_chunk_records(
             source_type=source_type,
             text=chunk,
             created_at=created_at,
-            metadata={**infer_chunk_metadata(file_name, chunk), **(metadata or {})},
+            metadata={
+                **infer_chunk_metadata(file_name, chunk),
+                "chunk_index": str(index),
+                "chunk_total": str(chunk_total),
+                "chunk_tokens": str(token_count(chunk)),
+                **(metadata or {}),
+            },
         )
-        for chunk in chunks
+        for index, chunk in enumerate(chunks, start=1)
     ]
 
 

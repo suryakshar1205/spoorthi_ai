@@ -47,3 +47,20 @@ class SearchMatch:
     rerank_score: float = 0.0
     quality_score: float = 0.0
     reasons: list[str] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class PipelineState:
+    session_id: str
+    raw_query: str
+    prepared_query: str
+    retrieval_query: str
+    context: str
+    source: str
+    confidence: float
+    matches: list[SearchMatch] = field(default_factory=list)
+    direct_answer: str | None = None
+
+    @property
+    def should_fallback(self) -> bool:
+        return self.context == "NO_CONTEXT_FOUND" and self.direct_answer is None

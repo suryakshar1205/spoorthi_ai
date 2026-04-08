@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 from collections import defaultdict
 
 import faiss
@@ -55,6 +56,8 @@ class VectorService:
     async def semantic_search(self, query: str, top_k: int) -> list[SearchMatch]:
         async with self._lock:
             if not self.records or self.index.ntotal == 0:
+                if self.settings.rag_debug_mode:
+                    logger.info("RAG DEBUG semantic_search query=%r records=0", query)
                 return []
 
             limit = min(max(top_k, 1), len(self.records))
@@ -74,6 +77,23 @@ class VectorService:
                     semantic_score=semantic_score,
                     quality_score=1.0,
                 )
+            )
+
+        if self.settings.rag_debug_mode:
+            logger.info(
+                "RAG DEBUG semantic_search query=%r top_k=%s total_records=%s candidates=%s",
+                query,
+                limit,
+                len(records_snapshot),
+                [
+                    {
+                        "file": match.chunk.file_name,
+                        "section": match.chunk.metadata.get("section", "general"),
+                        "semantic_score": round(match.semantic_score, 4),
+                        "preview": self._preview_text(match.chunk.text),
+                    }
+                    for match in matches[: min(5, len(matches))]
+                ],
             )
 
         return matches
@@ -159,3 +179,9 @@ class VectorService:
         if self._records_dirty:
             logger.info("Normalized persisted knowledge records before rebuilding the index.")
         return normalized_records
+
+    def _preview_text(self, text: str, limit: int = 160) -> str:
+        compact = re.sub(r"\s+", " ", text).strip()
+        if len(compact) <= limit:
+            return compact
+        return compact[:limit].rstrip() + "..."

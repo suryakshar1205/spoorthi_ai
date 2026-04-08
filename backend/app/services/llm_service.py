@@ -6,7 +6,7 @@ import logging
 import re
 
 from app.config import Settings
-from app.utils.text import extract_keywords, fuzzy_token_hits, normalize_query_text, normalize_source_text, normalize_text
+from app.utils.text import extract_keywords, fuzzy_token_hits, normalize_query_text, normalize_source_text, normalize_text, token_matches
 
 
 logger = logging.getLogger(__name__)
@@ -92,6 +92,21 @@ FIELD_ALIASES = {
 }
 
 FALLBACK_ANSWER = "I don't have that information. Please contact the organizers."
+STRICT_PROMPT_TEMPLATE = """You are Spoorthi Chatbot, an assistant for a technical fest.
+
+IMPORTANT:
+- You MUST answer ONLY from the provided context
+- Do NOT use external knowledge
+- If context does not contain answer, say:
+  'I don’t have that information. Please contact the organizers.'
+
+Context:
+{context}
+
+Question:
+{question}
+
+Answer:"""
 
 
 class ProviderError(RuntimeError):
@@ -116,7 +131,8 @@ class LocalProvider:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
 
-    async def generate_response(self, context: str, query: str) -> str:
+    async def generate_response(self, context: str, query: str, prompt: str | None = None) -> str:
+        del prompt
         context = normalize_source_text(context)
         if not context or context == "NO_CONTEXT_FOUND":
             return FALLBACK_ANSWER
@@ -143,6 +159,10 @@ class LocalProvider:
             term in query_text
             for term in ("contact", "coordinator", "coord", "faculty", "organizer", "email", "phone", "help desk")
         ):
+            answer = self._answer_event_contact(query_text, query_tokens, event_cards)
+            if answer:
+                return answer
+
             answer = self._answer_contact(query_text, fields, sentences)
             if answer:
                 return answer
@@ -163,12 +183,12 @@ class LocalProvider:
                 return answer
 
         if any(term in query_text for term in ("where", "venue", "location", "hall", "room", "auditorium", "lab")):
-            answer = self._answer_location(query_tokens, schedule_items, event_cards, fields, sentences)
+            answer = self._answer_location(query_text, query_tokens, schedule_items, event_cards, fields, sentences)
             if answer:
                 return answer
 
         if any(term in query_text for term in ("rule", "rules", "allowed", "coding contest")):
-            answer = self._answer_rules(query_tokens, event_cards, fields, sentences)
+            answer = self._answer_rules(query_text, query_tokens, event_cards, fields, sentences)
             if answer:
                 return answer
 
@@ -187,7 +207,7 @@ class LocalProvider:
             if answer:
                 return answer
 
-        answer = self._answer_generic(query_tokens, schedule_items, event_cards, sentences)
+        answer = self._answer_generic(query_text, query_tokens, schedule_items, event_cards, sentences)
         return answer or FALLBACK_ANSWER
 
     def _extract_context_blocks(self, context: str) -> list[ContextBlock]:
@@ -515,6 +535,60 @@ class LocalProvider:
             return None
         return "Organizer Contact Details:\n" + "\n".join(self._dedupe(contact_points)[:5])
 
+    def _answer_event_contact(
+        self,
+        query_text: str,
+        query_tokens: set[str],
+        event_cards: list[EventCard],
+    ) -> str | None:
+        contact_terms = {
+            "coordinator",
+            "coordinators",
+            "cord",
+            "contact",
+            "contacts",
+            "organizer",
+            "organizers",
+            "faculty",
+            "student",
+            "phone",
+            "email",
+            "help",
+            "desk",
+        }
+        specific_tokens = {token for token in query_tokens if token not in contact_terms}
+        if not specific_tokens:
+            return None
+
+        best_card = self._best_event_card(specific_tokens, event_cards, query_text=query_text)
+        if not best_card:
+            return None
+
+        coordinator_value = None
+        for key in ("coordinators", "managed by"):
+            if best_card.fields.get(key):
+                coordinator_value = best_card.fields[key]
+                break
+
+        if not coordinator_value:
+            coordinator_value = next(
+                (value for key, value in best_card.fields.items() if "coordinator" in key),
+                None,
+            )
+
+        if not coordinator_value:
+            return None
+
+        lines = [f"- Coordinators: {coordinator_value}"]
+        for key in ("location", "venue", "time", "purpose", "description", "focus"):
+            value = best_card.fields.get(key)
+            if value:
+                lines.append(f"- {self._field_label(key)}: {value}")
+            if len(lines) >= 4:
+                break
+
+        return f"{best_card.title} Coordinator Details:\n" + "\n".join(lines)
+
     def _answer_event_list(
         self,
         items: list[dict[str, str]],
@@ -577,7 +651,14 @@ class LocalProvider:
             return True
 
         explicit_phrases = (
+            "list events",
             "list all events",
+            "list all the events",
+            "show me all the events",
+            "tell me all the events",
+            "all events",
+            "all the events",
+            "event list",
             "available events",
             "what are the events",
             "which events",
@@ -601,7 +682,7 @@ class LocalProvider:
         event_cards: list[EventCard],
     ) -> str | None:
         if not items:
-            best_card = self._best_event_card(query_tokens, event_cards)
+            best_card = self._best_event_card(query_tokens, event_cards, query_text=query_text)
             if best_card:
                 return self._format_event_card(best_card, heading=f"{best_card.title} Details:")
             return None
@@ -648,14 +729,15 @@ class LocalProvider:
 
     def _answer_location(
         self,
+        query_text: str,
         query_tokens: set[str],
         schedule_items: list[dict[str, str]],
         event_cards: list[EventCard],
         fields: dict[str, str],
         sentences: list[str],
     ) -> str | None:
-        best_card = self._best_event_card(query_tokens, event_cards)
-        if best_card and ("location" in best_card.fields or "venue" in best_card.fields):
+        best_card = self._best_event_card(query_tokens, event_cards, query_text=query_text)
+        if best_card:
             return self._format_event_card(best_card, heading=f"{best_card.title} Details:")
 
         ranked = self._rank_schedule_items(query_tokens, schedule_items)
@@ -677,12 +759,13 @@ class LocalProvider:
 
     def _answer_rules(
         self,
+        query_text: str,
         query_tokens: set[str],
         event_cards: list[EventCard],
         fields: dict[str, str],
         sentences: list[str],
     ) -> str | None:
-        best_card = self._best_event_card(query_tokens, event_cards)
+        best_card = self._best_event_card(query_tokens, event_cards, query_text=query_text)
         if best_card and any(key in best_card.fields for key in ("team size", "participation", "category", "rules")):
             return self._format_event_card(best_card, heading=f"{best_card.title} Details:")
 
@@ -830,7 +913,7 @@ class LocalProvider:
                 heading = "Here are the workshop details available in the current context:"
                 return heading + "\n" + "\n".join(f"- {sentence}" for sentence in workshop_sentences[:4])
 
-        best_card = self._best_event_card(query_tokens, event_cards)
+        best_card = self._best_event_card(query_tokens, event_cards, query_text=query_text)
         if best_card:
             return self._format_event_card(best_card, heading=f"{best_card.title} Details:")
 
@@ -860,12 +943,13 @@ class LocalProvider:
 
     def _answer_generic(
         self,
+        query_text: str,
         query_tokens: set[str],
         schedule_items: list[dict[str, str]],
         event_cards: list[EventCard],
         sentences: list[str],
     ) -> str | None:
-        best_card = self._best_event_card(query_tokens, event_cards)
+        best_card = self._best_event_card(query_tokens, event_cards, query_text=query_text)
         if best_card:
             return self._format_event_card(best_card, heading=f"{best_card.title} Details:")
 
@@ -894,17 +978,44 @@ class LocalProvider:
         ranked.sort(key=lambda entry: entry[0], reverse=True)
         return ranked
 
-    def _best_event_card(self, query_tokens: set[str], cards: list[EventCard]) -> EventCard | None:
+    def _best_event_card(
+        self,
+        query_tokens: set[str],
+        cards: list[EventCard],
+        *,
+        query_text: str | None = None,
+    ) -> EventCard | None:
         if not query_tokens or not cards:
             return None
 
         ranked: list[tuple[float, EventCard]] = []
         for card in cards:
+            title_text = normalize_query_text(card.title)
+            title_tokens = set(extract_keywords(title_text, keep_generic_terms=True))
             haystack = normalize_query_text(f"{card.title} {' '.join(f'{key} {value}' for key, value in card.fields.items())}")
             text_tokens = set(extract_keywords(haystack, keep_generic_terms=True))
+
+            title_exact_hits, title_fuzzy_hits = fuzzy_token_hits(query_tokens, title_tokens)
             exact_hits, fuzzy_hits = fuzzy_token_hits(query_tokens, text_tokens)
+            title_bonus = 0.0
+            if query_text and title_text and title_text in query_text:
+                title_bonus += 1.2
+            if query_text and title_text and query_text in title_text:
+                title_bonus += 1.2
+            if query_tokens and all(
+                any(token_matches(token, candidate) for candidate in title_tokens)
+                for token in query_tokens
+            ):
+                title_bonus += 0.8
             bonus = 0.2 if any(token in haystack for token in query_tokens if len(token) >= 4) else 0.0
-            score = exact_hits + (fuzzy_hits * 0.65) + bonus
+            score = (
+                (title_exact_hits * 1.6)
+                + (title_fuzzy_hits * 0.9)
+                + (exact_hits * 0.5)
+                + (fuzzy_hits * 0.25)
+                + title_bonus
+                + bonus
+            )
             if score > 0:
                 ranked.append((score, card))
 
@@ -992,13 +1103,34 @@ class LLMService:
         self.settings = settings
         self.local_provider = LocalProvider(settings)
 
+    def build_prompt(self, *, context: str, question: str) -> str:
+        return STRICT_PROMPT_TEMPLATE.format(context=context, question=question)
+
     async def generate_response(self, context: str, query: str) -> str:
         if not context or context == "NO_CONTEXT_FOUND":
+            if self.settings.rag_debug_mode:
+                logger.info("RAG DEBUG llm_input query=%r context_state=%s", query, "NO_CONTEXT_FOUND")
             return FALLBACK_ANSWER
 
-        answer = await self.local_provider.generate_response(context=context, query=query)
+        prompt = self.build_prompt(context=context, question=query)
+        if self.settings.rag_debug_mode:
+            logger.info(
+                "RAG DEBUG llm_input query=%r context_chars=%s context_preview=%r",
+                query,
+                len(context),
+                self._preview_text(context, limit=700),
+            )
+            logger.info(
+                "RAG DEBUG final_prompt query=%r prompt_preview=%r",
+                query,
+                self._preview_text(prompt, limit=900),
+            )
+
+        answer = await self.local_provider.generate_response(context=context, query=query, prompt=prompt)
         cleaned = normalize_source_text(answer)
         cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+        if self.settings.rag_debug_mode:
+            logger.info("RAG DEBUG llm_output query=%r answer_preview=%r", query, self._preview_text(cleaned, limit=300))
         return cleaned or FALLBACK_ANSWER
 
     async def stream_response(self, context: str, query: str):
@@ -1007,3 +1139,9 @@ class LLMService:
         for token in tokens:
             yield token
             await asyncio.sleep(max(0, self.settings.response_stream_delay_ms) / 1000)
+
+    def _preview_text(self, text: str, *, limit: int) -> str:
+        compact = re.sub(r"\s+", " ", text).strip()
+        if len(compact) <= limit:
+            return compact
+        return compact[:limit].rstrip() + "..."
