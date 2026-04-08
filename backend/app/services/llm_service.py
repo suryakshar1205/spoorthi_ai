@@ -159,6 +159,11 @@ class LocalProvider:
             if answer:
                 return answer
 
+        if any(term in query_text for term in ("workshop", "presentation", "expo", "challenge", "quiz", "contest", "hackathon")):
+            answer = self._answer_event_specific(query_text, query_tokens, schedule_items, event_cards, sentences)
+            if answer:
+                return answer
+
         if any(term in query_text for term in ("history", "legacy", "overview", "about", "what is")):
             answer = self._answer_overview(sentences)
             if answer:
@@ -516,6 +521,42 @@ class LocalProvider:
 
         intro = "Here are a few beginner-friendly options from the available fest context:"
         return intro + "\n" + "\n".join(suggestions[:4])
+
+    def _answer_event_specific(
+        self,
+        query_text: str,
+        query_tokens: set[str],
+        schedule_items: list[dict[str, str]],
+        event_cards: list[EventCard],
+        sentences: list[str],
+    ) -> str | None:
+        if "workshop" in query_text:
+            workshop_sentences = [
+                sentence
+                for sentence in self._top_sentences(query_tokens, sentences, limit=5)
+                if "workshop" in sentence.lower()
+            ]
+            if workshop_sentences:
+                heading = "Here are the workshop details available in the current context:"
+                return heading + "\n" + "\n".join(f"- {sentence}" for sentence in workshop_sentences[:4])
+
+        best_card = self._best_event_card(query_tokens, event_cards)
+        if best_card:
+            return self._format_event_card(best_card, heading=f"{best_card.title} Details:")
+
+        ranked_schedule = self._rank_schedule_items(query_tokens, schedule_items)
+        if ranked_schedule and ranked_schedule[0][0] >= 0.4:
+            lines = ["Here are the most relevant event details I found:"]
+            for _, item in ranked_schedule[:3]:
+                lines.append(f"- {item['event']}: {item['time']} ({item['location']})")
+            return "\n".join(self._dedupe(lines))
+
+        top_sentences = self._top_sentences(query_tokens, sentences, limit=4)
+        if not top_sentences:
+            return None
+
+        heading = "Here are the most relevant event details I found:"
+        return heading + "\n" + "\n".join(f"- {sentence}" for sentence in top_sentences)
 
     def _answer_overview(self, sentences: list[str]) -> str | None:
         overview_terms = ("spoorthi", "jntuh", "ece", "technical", "techno-cultural", "flagship", "2004", "2009")
