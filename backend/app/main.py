@@ -214,10 +214,10 @@ def _open_frontend_in_browser() -> None:
     threading.Thread(target=_wait_and_open, daemon=True).start()
 
 
-async def _load_bundled_knowledge(settings, vector_service: VectorService) -> None:
+async def _load_bundled_knowledge(settings, vector_service: VectorService) -> tuple[int, int]:
     bundled_paths = settings.iter_bundled_knowledge_files()
     if not bundled_paths:
-        return
+        return 0, 0
 
     existing_bundled_paths = {
         str(record.metadata.get("bundled_path", "")).strip()
@@ -226,6 +226,7 @@ async def _load_bundled_knowledge(settings, vector_service: VectorService) -> No
     }
 
     loaded_count = 0
+    loaded_chunks = 0
     for bundled_path in bundled_paths:
         relative_path = bundled_path.relative_to(settings.bundled_knowledge_dir).as_posix()
         if relative_path in existing_bundled_paths:
@@ -260,12 +261,16 @@ async def _load_bundled_knowledge(settings, vector_service: VectorService) -> No
 
         await vector_service.add_chunks(chunks)
         loaded_count += 1
+        loaded_chunks += len(chunks)
 
     if loaded_count:
         print(
             f"[Spoorthi Chatbot] Loaded {loaded_count} bundled knowledge file(s) from "
             f"{settings.bundled_knowledge_dir}"
         )
+        print(f"[Spoorthi Chatbot] Active bundled knowledge chunks: {len(vector_service.records)}")
+
+    return loaded_count, loaded_chunks
 
 
 atexit.register(_stop_frontend)
@@ -277,7 +282,7 @@ async def lifespan(app: FastAPI):
     embedding_service = EmbeddingService(settings)
     vector_service = VectorService(settings, embedding_service=embedding_service)
     await vector_service.initialize()
-    await _load_bundled_knowledge(settings, vector_service)
+    bundled_files_loaded, bundled_chunks_loaded = await _load_bundled_knowledge(settings, vector_service)
 
     auth_service = AuthService(settings)
     search_service = SearchService(settings)
@@ -297,6 +302,8 @@ async def lifespan(app: FastAPI):
     app.state.settings = settings
     app.state.embedding_service = embedding_service
     app.state.vector_service = vector_service
+    app.state.bundled_files_loaded = bundled_files_loaded
+    app.state.bundled_chunks_loaded = bundled_chunks_loaded
     app.state.auth_service = auth_service
     app.state.search_service = search_service
     app.state.llm_service = llm_service
@@ -337,8 +344,18 @@ async def root() -> dict[str, str]:
 
 
 @app.get("/health")
-async def healthcheck() -> dict[str, str]:
-    return {"status": "ok", "provider": settings.llm_provider, "model": settings.current_model}
+async def healthcheck(request: Request) -> dict[str, str | int]:
+    vector_service: VectorService = request.app.state.vector_service
+    bundled_files = int(getattr(request.app.state, "bundled_files_loaded", 0))
+    bundled_chunks = int(getattr(request.app.state, "bundled_chunks_loaded", 0))
+    return {
+        "status": "ok",
+        "provider": settings.llm_provider,
+        "model": settings.current_model,
+        "knowledge_chunks": len(vector_service.records),
+        "bundled_files_loaded_on_startup": bundled_files,
+        "bundled_chunks_loaded_on_startup": bundled_chunks,
+    }
 
 
 if __name__ == "__main__":
