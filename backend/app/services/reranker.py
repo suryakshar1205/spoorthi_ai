@@ -24,6 +24,7 @@ class RerankerService:
             query_tokens = set(extract_keywords(query_text, keep_generic_terms=True))
         intents = self._detect_intents(query_text)
         broad_query = self._is_broad_query(query_text)
+        query_tokens = self._expand_query_tokens(query_tokens, query_text, intents, broad_query)
 
         reranked: list[SearchMatch] = []
         for match in matches:
@@ -95,11 +96,47 @@ class RerankerService:
             intents.add("contact")
         if any(term in query_text for term in ("rule", "rules", "allowed", "late entry", "team", "members")):
             intents.add("rules")
-        if any(term in query_text for term in ("workshop", "presentation", "expo", "challenge", "quiz", "hackathon", "contest")):
+        if any(
+            term in query_text
+            for term in ("workshop", "presentation", "expo", "challenge", "quiz", "hackathon", "contest", "event", "events", "activities")
+        ):
             intents.add("events")
         if any(term in query_text for term in ("history", "legacy", "about", "overview", "what is")):
             intents.add("overview")
         return intents
+
+    def _expand_query_tokens(
+        self,
+        query_tokens: set[str],
+        query_text: str,
+        intents: set[str],
+        broad_query: bool,
+    ) -> set[str]:
+        expanded = set(query_tokens)
+        if "events" not in intents:
+            return expanded
+
+        if broad_query or query_text.strip() in {"event", "events", "activity", "activities"}:
+            expanded.update(
+                {
+                    "workshop",
+                    "hackathon",
+                    "flashmob",
+                    "ideathon",
+                    "quiz",
+                    "challenge",
+                    "presentation",
+                    "posteriza",
+                    "circuit",
+                    "clutch",
+                    "combat",
+                    "treasure",
+                    "art",
+                    "tech",
+                    "room",
+                }
+            )
+        return expanded
 
     def _section_adjustment(self, intents: set[str], broad_query: bool, section: str) -> float:
         if not intents:
@@ -115,6 +152,8 @@ class RerankerService:
             adjustment += 0.1
         if "overview" in intents and section in {"history", "general"}:
             adjustment += 0.06
+        if broad_query and "events" in intents and section in {"contact", "rules"}:
+            adjustment -= 0.1
         if not broad_query and section == "history" and any(
             intent in intents for intent in ("contact", "registration", "rules", "schedule", "venue", "events")
         ):
@@ -122,6 +161,9 @@ class RerankerService:
         return adjustment
 
     def _is_broad_query(self, query_text: str) -> bool:
+        if query_text.strip() in {"event", "events", "activity", "activities"}:
+            return True
+
         broad_terms = (
             "what events are happening",
             "today",

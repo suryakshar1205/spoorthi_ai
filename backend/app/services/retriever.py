@@ -27,6 +27,7 @@ class RetrieverService:
             query_tokens = set(extract_keywords(query_text, keep_generic_terms=True))
         intents = self._detect_intents(query_text)
         broad_query = self._is_broad_query(query_text)
+        query_tokens = self._expand_query_tokens(query_tokens, query_text, intents, broad_query)
 
         candidates_by_id = {match.chunk.id: match for match in semantic_candidates}
         if len(self.vector_service.records) <= 300:
@@ -139,6 +140,41 @@ class RetrieverService:
 
         return intents
 
+    def _expand_query_tokens(
+        self,
+        query_tokens: set[str],
+        query_text: str,
+        intents: set[str],
+        broad_query: bool,
+    ) -> set[str]:
+        expanded = set(query_tokens)
+
+        if "events" not in intents:
+            return expanded
+
+        if broad_query or query_text.strip() in {"event", "events", "activity", "activities"}:
+            expanded.update(
+                {
+                    "workshop",
+                    "hackathon",
+                    "flashmob",
+                    "ideathon",
+                    "quiz",
+                    "challenge",
+                    "presentation",
+                    "posteriza",
+                    "circuit",
+                    "clutch",
+                    "combat",
+                    "treasure",
+                    "art",
+                    "tech",
+                    "room",
+                }
+            )
+
+        return expanded
+
     def _intent_score(self, intents: set[str], text: str, section: str) -> tuple[float, list[str]]:
         if not intents:
             return 0.0, []
@@ -162,7 +198,30 @@ class RetrieverService:
         if "rules" in intents and (section == "rules" or any(term in lowered for term in ("participants", "judges", "late entry", "team"))):
             score += 0.45
             reasons.append("rules-match")
-        if "events" in intents and (section in {"events", "schedule"} or any(term in lowered for term in ("workshop", "presentation", "expo", "challenge", "quiz", "cultural"))):
+        if "events" in intents and (
+            section in {"events", "schedule"}
+            or any(
+                term in lowered
+                for term in (
+                    "workshop",
+                    "presentation",
+                    "expo",
+                    "challenge",
+                    "quiz",
+                    "cultural",
+                    "hackathon",
+                    "ideathon",
+                    "posteriza",
+                    "flashmob",
+                    "treasure hunt",
+                    "code clutch",
+                    "logic combat",
+                    "proto circuit",
+                    "art room",
+                    "tech room",
+                )
+            )
+        ):
             score += 0.4
             reasons.append("event-match")
         if "overview" in intents and (section in {"history", "general"} or any(term in lowered for term in ("started", "legacy", "techno-cultural", "flagship"))):
@@ -197,6 +256,8 @@ class RetrieverService:
             adjustment += 0.08
         if ("venue" in intents or "schedule" in intents or "events" in intents) and section in {"schedule", "venue", "events"}:
             adjustment += 0.06
+        if broad_query and "events" in intents and section in {"contact", "rules"}:
+            adjustment -= 0.08
         if not broad_query and section == "history" and any(
             intent in intents for intent in ("contact", "registration", "rules", "schedule", "venue", "events")
         ):
@@ -205,6 +266,9 @@ class RetrieverService:
         return adjustment
 
     def _is_broad_query(self, query_text: str) -> bool:
+        if query_text.strip() in {"event", "events", "activity", "activities"}:
+            return True
+
         broad_terms = (
             "what events are happening",
             "today",

@@ -39,6 +39,9 @@ IGNORED_EVENT_TITLES = {
     "about the ece department",
     "available events",
     "contacts",
+    "faculty coordinator",
+    "student coordinator team",
+    "finance team",
     "cultural and engagement activities",
     "event overview",
     "institutional context",
@@ -318,9 +321,31 @@ class LocalProvider:
                 if normalized_key and normalized_value:
                     fields[normalized_key] = normalized_value
 
-            if len(fields) >= 2:
+            if len(fields) >= 2 and not self._looks_like_contact_card(lowered_title, fields):
                 cards.append(EventCard(title=title, fields=fields, lines=lines))
         return cards
+
+    def _looks_like_contact_card(self, lowered_title: str, fields: dict[str, str]) -> bool:
+        if "coordinator" in lowered_title or lowered_title.endswith("team"):
+            return True
+
+        field_keys = set(fields)
+        contact_like_keys = {"name", "names", "role", "responsibility", "additional responsibility", "focus areas"}
+        event_like_keys = {
+            "description",
+            "details",
+            "duration",
+            "focus",
+            "time",
+            "location",
+            "purpose",
+            "participants",
+            "skills highlighted",
+            "outcome",
+            "coordinators",
+        }
+
+        return field_keys <= contact_like_keys and not (field_keys & event_like_keys)
 
     def _clean_report_title(self, title: str) -> str:
         match = REPORT_SECTION_RE.match(normalize_text(title))
@@ -547,6 +572,10 @@ class LocalProvider:
         return "\n".join(fallback_lines) if len(fallback_lines) > 1 else None
 
     def _is_broad_event_query(self, query_text: str) -> bool:
+        normalized_query = query_text.strip()
+        if normalized_query in {"event", "events", "activity", "activities", "fest events", "technical events"}:
+            return True
+
         explicit_phrases = (
             "list all events",
             "available events",
@@ -777,6 +806,21 @@ class LocalProvider:
         sentences: list[str],
     ) -> str | None:
         if "workshop" in query_text:
+            workshop_cards = [card for card in event_cards if "workshop" in card.title.lower()]
+            if workshop_cards:
+                lines = ["Here are the workshop details available in the current context:"]
+                for card in workshop_cards[:4]:
+                    summary_bits: list[str] = []
+                    for key in ("duration", "focus", "day 1", "day 2", "expert support", "outcome"):
+                        value = card.fields.get(key)
+                        if value:
+                            summary_bits.append(f"{self._field_label(key)}: {value}")
+                    if summary_bits:
+                        lines.append(f"- {card.title}: " + " | ".join(summary_bits[:3]))
+                    else:
+                        lines.append(f"- {card.title}")
+                return "\n".join(lines)
+
             workshop_sentences = [
                 sentence
                 for sentence in self._top_sentences(query_tokens, sentences, limit=5)

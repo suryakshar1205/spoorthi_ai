@@ -344,12 +344,35 @@ def infer_chunk_metadata(file_name: str, text: str) -> dict[str, str]:
         section = "registration"
     elif any(term in lowered for term in ("rule", "participants", "judges", "late entry", "team")):
         section = "rules"
-    elif any(term in lowered for term in ("coordinator", "email", "phone", "contact")):
-        section = "contact"
+    elif any(
+        term in lowered
+        for term in (
+            "workshop",
+            "hackathon",
+            "expo",
+            "presentation",
+            "quiz",
+            "challenge",
+            "cultural",
+            "ideathon",
+            "code clutch",
+            "logic combat",
+            "treasure hunt",
+            "proto circuit",
+            "posteriza",
+            "flashmob",
+            "art room",
+            "tech room",
+            "experience zones",
+            "technical event",
+            "event highlights",
+        )
+    ):
+        section = "events"
     elif any(term in lowered for term in ("history", "legacy", "inception", "started", "expanded")):
         section = "history"
-    elif any(term in lowered for term in ("workshop", "expo", "presentation", "quiz", "challenge", "cultural")):
-        section = "events"
+    elif any(term in lowered for term in ("coordinator", "email", "phone", "contact")):
+        section = "contact"
 
     quality = "clean"
     if CITATION_RE.search(text) or "\x00" in text or "web sources" in lowered:
