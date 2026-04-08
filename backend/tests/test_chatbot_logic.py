@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from app.services.chatbot_logic import route_predefined_query
 
 
@@ -24,3 +26,56 @@ def test_prefetched_questions_return_exact_answers() -> None:
         "Companies like MathWorks, Physitech Electronics, BrainOVision, and ICICI Bank are involved. "
         "They support workshops, hackathons, and overall fest activities."
     )
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_heading"),
+    [
+        ("PCB Workshop", "PCB Workshop Details"),
+        ("AI and IoT Workshop", "AI and IoT Workshop Details"),
+        ("Hackathon", "Hackathon Details"),
+        ("Flashmob", "Flashmob Details"),
+        ("Art Room", "Art Room Details"),
+        ("Tech Room", "Tech Room Details"),
+        ("Tech Treasure Hunt", "Tech Treasure Hunt Details"),
+        ("IDEATHON", "IDEATHON Details"),
+        ("Code Clutch", "Code Clutch Details"),
+        ("Logic Combat", "Logic Combat Details"),
+        ("Tech Quiz", "Tech Quiz Details"),
+        ("Proto Circuit", "Proto Circuit Details"),
+        ("Posteriza", "Posteriza Details"),
+    ],
+)
+def test_event_names_return_details(query: str, expected_heading: str) -> None:
+    response = route_predefined_query(query)
+    assert response is not None
+    assert expected_heading in response
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_heading"),
+    [
+        (" pcb   workshop details ", "PCB Workshop Details"),
+        ("aiiot workshop", "AI and IoT Workshop Details"),
+        ("hackthon", "Hackathon Details"),
+        ("flash mob details", "Flashmob Details"),
+        ("artroom", "Art Room Details"),
+        ("techroom", "Tech Room Details"),
+        ("tech treasure hant", "Tech Treasure Hunt Details"),
+        ("idea thon", "IDEATHON Details"),
+        ("codng contest", "Code Clutch Details"),
+        ("logic combt", "Logic Combat Details"),
+        ("technical quizz", "Tech Quiz Details"),
+        ("proto circuut", "Proto Circuit Details"),
+        ("poster presentation", "Posteriza Details"),
+    ],
+)
+def test_event_queries_tolerate_minor_typos_and_spacing(query: str, expected_heading: str) -> None:
+    response = route_predefined_query(query)
+    assert response is not None
+    assert expected_heading in response
+
+
+def test_location_queries_return_location_fallback_when_not_specified() -> None:
+    response = route_predefined_query("Where is hackthon?")
+    assert response == "Hackathon Location Details:\n- Location: Not specified in the current context."

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from difflib import SequenceMatcher
 import re
 
 from app.utils.text import normalize_query_text
@@ -153,6 +154,139 @@ PREDEFINED_FEST_FAQ = {
     ),
 }
 
+PREDEFINED_EVENT_DETAILS = {
+    "PCB Workshop": {
+        "details": (
+            "PCB Workshop Details:\n"
+            "- Dates: March 16-17\n"
+            "- Duration: 2 days\n"
+            "- Focus: PCB design, schematic creation, layout design, and fabrication\n"
+            "- Coordinators: Yamini, Rajanna, Srinath, Tanveer\n"
+            "- Outcome: Hands-on technical learning in circuit design and fabrication"
+        ),
+        "location": "Not specified in the current context.",
+    },
+    "AI and IoT Workshop": {
+        "details": (
+            "AI and IoT Workshop Details:\n"
+            "- Duration: 2 days\n"
+            "- Day 1: AI-based image processing using MATLAB\n"
+            "- Day 2: Internet of Things (IoT) hands-on workshop\n"
+            "- Expert Support: MathWorks speakers\n"
+            "- Outcome: Practical exposure to emerging technologies and real-world applications"
+        ),
+        "location": "Not specified in the current context.",
+    },
+    "Hackathon": {
+        "details": (
+            "Hackathon Details:\n"
+            "- Duration: 2 days\n"
+            "- Focus: Solving real-world problems through teamwork, prototyping, and innovation\n"
+            "- Skills Highlighted: Problem solving, teamwork, time management, technical creativity\n"
+            "- Coordinators: Aditya, Naveen, Eswar, Veda, Nikhitha, Phaneendra, Vinay"
+        ),
+        "location": "Not specified in the current context.",
+    },
+    "Flashmob": {
+        "details": (
+            "Flashmob Details:\n"
+            "- Location: Sarath City Capital Mall\n"
+            "- Purpose: Promote the fest in a fun and engaging way\n"
+            "- Participants: Students from 1st year to 4th year\n"
+            "- Coordinators: Adithya Singh, Greeshmitha, Zoyan, Lasya"
+        ),
+        "location": "Sarath City Capital Mall",
+    },
+    "Art Room": {
+        "details": (
+            "Art Room Details:\n"
+            "- Purpose: Decorations, paintings, themes, and visual design for the department during the fest\n"
+            "- Coordinators: Veda, Akanksha, Rishikesh, Sindhuja"
+        ),
+        "location": "Not specified in the current context.",
+    },
+    "Tech Room": {
+        "details": (
+            "Tech Room Details:\n"
+            "- Purpose: Technical games, electronics-based activities, working models, and project demonstrations\n"
+            "- Coordinators: Surya, Srinidhi, Meghana, Neshitha, Sainag"
+        ),
+        "location": "Not specified in the current context.",
+    },
+    "Tech Treasure Hunt": {
+        "details": (
+            "Tech Treasure Hunt Details:\n"
+            "- Description: A technical treasure hunt that combines clues, teamwork, and problem solving\n"
+            "- Coordinators: Bhavana, Gagan, Sonal, Mahesh"
+        ),
+        "location": "Not specified in the current context.",
+    },
+    "IDEATHON": {
+        "details": (
+            "IDEATHON Details:\n"
+            "- Description: An innovation-focused event where students present ideas and solutions to real-world challenges\n"
+            "- Coordinators: Shashank, Akshay, Divya, Anuhya"
+        ),
+        "location": "Not specified in the current context.",
+    },
+    "Code Clutch": {
+        "details": (
+            "Code Clutch Details:\n"
+            "- Description: A coding event that focuses on programming skill, logical thinking, and problem solving\n"
+            "- Coordinators: Jithendra, Sharan, Sowmya Sri, Sravanthi"
+        ),
+        "location": "Not specified in the current context.",
+    },
+    "Logic Combat": {
+        "details": (
+            "Logic Combat Details:\n"
+            "- Description: An event centered on analytical reasoning and challenging logic-based problems\n"
+            "- Coordinators: Suraj, Srujith, Bhargavi, Rajeswari"
+        ),
+        "location": "Not specified in the current context.",
+    },
+    "Tech Quiz": {
+        "details": (
+            "Tech Quiz Details:\n"
+            "- Description: A technical quiz covering multiple engineering and technology domains\n"
+            "- Coordinators: Hrushikesh Reddy, Vaishnav, Ravali Sri, Harika"
+        ),
+        "location": "Not specified in the current context.",
+    },
+    "Proto Circuit": {
+        "details": (
+            "Proto Circuit Details:\n"
+            "- Description: A circuit-based technical event encouraging practical electronics involvement\n"
+            "- Coordinators: Swetha, Abhinikshith, Navya Sri, Mani Vivek"
+        ),
+        "location": "Not specified in the current context.",
+    },
+    "Posteriza": {
+        "details": (
+            "Posteriza Details:\n"
+            "- Description: A creative poster presentation event for ideas, concepts, and research showcases\n"
+            "- Coordinators: Maheshwar, Pavan, Mounika, Sadvi"
+        ),
+        "location": "Not specified in the current context.",
+    },
+}
+
+PREDEFINED_EVENT_ALIASES = {
+    "PCB Workshop": ("pcb workshop", "pcbworkshop", "pcb"),
+    "AI and IoT Workshop": ("ai and iot workshop", "ai iot workshop", "ai workshop", "iot workshop", "aiiot workshop"),
+    "Hackathon": ("hackathon", "hack athon", "hackthon"),
+    "Flashmob": ("flashmob", "flash mob"),
+    "Art Room": ("art room", "artroom"),
+    "Tech Room": ("tech room", "techroom"),
+    "Tech Treasure Hunt": ("tech treasure hunt", "treasure hunt", "techtreasurehunt"),
+    "IDEATHON": ("ideathon", "idea thon", "ideaathon"),
+    "Code Clutch": ("code clutch", "codeclutch", "coding contest", "coding event", "codng contest"),
+    "Logic Combat": ("logic combat", "logiccombat"),
+    "Tech Quiz": ("tech quiz", "technical quiz", "techquiz"),
+    "Proto Circuit": ("proto circuit", "protocircuit"),
+    "Posteriza": ("posteriza", "poster presentation", "poster event"),
+}
+
 
 def normalize_query(query: str) -> str:
     lowered = normalize_query_text(query)
@@ -186,6 +320,10 @@ def route_predefined_query(query: str) -> str | None:
     predefined_faq_response = PREDEFINED_FEST_FAQ_BY_NORMALIZED_QUERY.get(normalized)
     if predefined_faq_response:
         return predefined_faq_response
+
+    event_response = _event_response(normalized)
+    if event_response:
+        return event_response
 
     return None
 
@@ -252,3 +390,57 @@ def _has_fest_intent(normalized_query: str) -> bool:
 
 def _matches_any(normalized_query: str, *phrases: str) -> bool:
     return any(phrase in normalized_query for phrase in phrases)
+
+
+def _event_response(normalized_query: str) -> str | None:
+    match = _best_event_match(normalized_query)
+    if not match:
+        return None
+
+    event_name = match
+    event_details = PREDEFINED_EVENT_DETAILS[event_name]
+    if _wants_location_details(normalized_query):
+        return f"{event_name} Location Details:\n- Location: {event_details['location']}"
+
+    return event_details["details"]
+
+
+def _best_event_match(normalized_query: str) -> str | None:
+    compact_query = normalized_query.replace(" ", "")
+    query_tokens = normalized_query.split()
+
+    best_name = None
+    best_score = 0.0
+
+    for event_name, aliases in PREDEFINED_EVENT_ALIASES.items():
+        for alias in aliases:
+            normalized_alias = normalize_query(alias)
+            compact_alias = normalized_alias.replace(" ", "")
+
+            if normalized_alias in normalized_query or compact_alias in compact_query:
+                return event_name
+
+            alias_tokens = normalized_alias.split()
+            window_lengths = {max(1, len(alias_tokens) - 1), len(alias_tokens), len(alias_tokens) + 1}
+            for window_length in window_lengths:
+                if window_length > len(query_tokens):
+                    continue
+                for start in range(0, len(query_tokens) - window_length + 1):
+                    window = " ".join(query_tokens[start : start + window_length])
+                    score = SequenceMatcher(None, window.replace(" ", ""), compact_alias).ratio()
+                    if score > best_score:
+                        best_score = score
+                        best_name = event_name
+
+            whole_query_score = SequenceMatcher(None, compact_query, compact_alias).ratio()
+            if whole_query_score > best_score:
+                best_score = whole_query_score
+                best_name = event_name
+
+    if best_score >= 0.84:
+        return best_name
+    return None
+
+
+def _wants_location_details(normalized_query: str) -> bool:
+    return any(term in normalized_query for term in ("where is", "location", "venue", "held at", "happening at"))
