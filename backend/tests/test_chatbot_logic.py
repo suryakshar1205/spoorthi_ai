@@ -79,3 +79,32 @@ def test_event_queries_tolerate_minor_typos_and_spacing(query: str, expected_hea
 def test_location_queries_return_location_fallback_when_not_specified() -> None:
     response = route_predefined_query("Where is hackthon?")
     assert response == "Hackathon Location Details:\n- Location: Not specified in the current context."
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_answer"),
+    [
+        (
+            "Who is Veda?",
+            "Veda is the Coordinator of Hackathon and Coordinator of Art Room.",
+        ),
+        (
+            "who is surya coordinator",
+            "Surya is the Coordinator of Tech Room.",
+        ),
+        (
+            "tell me about jithendra",
+            "Jithendra is the Coordinator of Code Clutch.",
+        ),
+        (
+            "adithya singh",
+            "Adithya Singh is the Coordinator of Flashmob.",
+        ),
+        (
+            "who is srujth",
+            "Srujith is the Coordinator of Logic Combat.",
+        ),
+    ],
+)
+def test_coordinator_name_queries_return_event_roles(query: str, expected_answer: str) -> None:
+    assert route_predefined_query(query) == expected_answer

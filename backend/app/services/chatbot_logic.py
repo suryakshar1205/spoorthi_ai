@@ -287,6 +287,64 @@ PREDEFINED_EVENT_ALIASES = {
     "Posteriza": ("posteriza", "poster presentation", "poster event"),
 }
 
+COORDINATOR_ROLES = {
+    "Dr. Anitha Sheela Kancharla": ("Faculty Coordinator of Spoorthi Fest",),
+    "Naveen": ("Student Coordinator of Spoorthi Fest", "Coordinator of Hackathon"),
+    "Nikitha": ("Student Coordinator of Spoorthi Fest",),
+    "Aditya Singh": ("Student Coordinator of Spoorthi Fest",),
+    "Yashashwini": ("Student Coordinator of Spoorthi Fest",),
+    "Yamini": ("Coordinator of PCB Workshop",),
+    "Rajanna": ("Coordinator of PCB Workshop",),
+    "Srinath": ("Coordinator of PCB Workshop",),
+    "Tanveer": ("Coordinator of PCB Workshop",),
+    "Aditya": ("Coordinator of Hackathon",),
+    "Eswar": ("Coordinator of Hackathon",),
+    "Veda": ("Coordinator of Hackathon", "Coordinator of Art Room"),
+    "Nikhitha": ("Coordinator of Hackathon",),
+    "Phaneendra": ("Coordinator of Hackathon",),
+    "Vinay": ("Coordinator of Hackathon",),
+    "Adithya Singh": ("Coordinator of Flashmob",),
+    "Greeshmitha": ("Coordinator of Flashmob",),
+    "Zoyan": ("Coordinator of Flashmob",),
+    "Lasya": ("Coordinator of Flashmob",),
+    "Akanksha": ("Coordinator of Art Room",),
+    "Rishikesh": ("Coordinator of Art Room",),
+    "Sindhuja": ("Coordinator of Art Room",),
+    "Surya": ("Coordinator of Tech Room",),
+    "Srinidhi": ("Coordinator of Tech Room",),
+    "Meghana": ("Coordinator of Tech Room",),
+    "Neshitha": ("Coordinator of Tech Room",),
+    "Sainag": ("Coordinator of Tech Room",),
+    "Bhavana": ("Coordinator of Tech Treasure Hunt",),
+    "Gagan": ("Coordinator of Tech Treasure Hunt",),
+    "Sonal": ("Coordinator of Tech Treasure Hunt",),
+    "Mahesh": ("Coordinator of Tech Treasure Hunt",),
+    "Shashank": ("Coordinator of IDEATHON",),
+    "Akshay": ("Coordinator of IDEATHON",),
+    "Divya": ("Coordinator of IDEATHON",),
+    "Anuhya": ("Coordinator of IDEATHON",),
+    "Jithendra": ("Coordinator of Code Clutch",),
+    "Sharan": ("Coordinator of Code Clutch",),
+    "Sowmya Sri": ("Coordinator of Code Clutch",),
+    "Sravanthi": ("Coordinator of Code Clutch",),
+    "Suraj": ("Coordinator of Logic Combat",),
+    "Srujith": ("Coordinator of Logic Combat",),
+    "Bhargavi": ("Coordinator of Logic Combat",),
+    "Rajeswari": ("Coordinator of Logic Combat",),
+    "Hrushikesh Reddy": ("Coordinator of Tech Quiz",),
+    "Vaishnav": ("Coordinator of Tech Quiz",),
+    "Ravali Sri": ("Coordinator of Tech Quiz",),
+    "Harika": ("Coordinator of Tech Quiz",),
+    "Swetha": ("Coordinator of Proto Circuit",),
+    "Abhinikshith": ("Coordinator of Proto Circuit",),
+    "Navya Sri": ("Coordinator of Proto Circuit",),
+    "Mani Vivek": ("Coordinator of Proto Circuit",),
+    "Maheshwar": ("Coordinator of Posteriza",),
+    "Pavan": ("Coordinator of Posteriza",),
+    "Mounika": ("Coordinator of Posteriza",),
+    "Sadvi": ("Coordinator of Posteriza",),
+}
+
 
 def normalize_query(query: str) -> str:
     lowered = normalize_query_text(query)
@@ -320,6 +378,10 @@ def route_predefined_query(query: str) -> str | None:
     predefined_faq_response = PREDEFINED_FEST_FAQ_BY_NORMALIZED_QUERY.get(normalized)
     if predefined_faq_response:
         return predefined_faq_response
+
+    coordinator_response = _coordinator_name_response(normalized)
+    if coordinator_response:
+        return coordinator_response
 
     event_response = _event_response(normalized)
     if event_response:
@@ -444,3 +506,54 @@ def _best_event_match(normalized_query: str) -> str | None:
 
 def _wants_location_details(normalized_query: str) -> bool:
     return any(term in normalized_query for term in ("where is", "location", "venue", "held at", "happening at"))
+
+
+def _coordinator_name_response(normalized_query: str) -> str | None:
+    matched_name = _best_coordinator_match(normalized_query)
+    if not matched_name:
+        return None
+
+    roles = COORDINATOR_ROLES[matched_name]
+    if len(roles) == 1:
+        return f"{matched_name} is the {roles[0]}."
+
+    if len(roles) == 2:
+        roles_text = f"{roles[0]} and {roles[1]}"
+    else:
+        roles_text = ", ".join(roles[:-1]) + f", and {roles[-1]}"
+    return f"{matched_name} is the {roles_text}."
+
+
+def _best_coordinator_match(normalized_query: str) -> str | None:
+    compact_query = normalized_query.replace(" ", "")
+    query_tokens = normalized_query.split()
+    best_name = None
+    best_score = 0.0
+
+    for name in COORDINATOR_ROLES:
+        normalized_name = normalize_query(name)
+        compact_name = normalized_name.replace(" ", "")
+
+        if normalized_name in normalized_query or compact_name in compact_query:
+            return name
+
+        name_tokens = normalized_name.split()
+        window_lengths = {max(1, len(name_tokens) - 1), len(name_tokens), len(name_tokens) + 1}
+        for window_length in window_lengths:
+            if window_length > len(query_tokens):
+                continue
+            for start in range(0, len(query_tokens) - window_length + 1):
+                window = " ".join(query_tokens[start : start + window_length])
+                score = SequenceMatcher(None, window.replace(" ", ""), compact_name).ratio()
+                if score > best_score:
+                    best_score = score
+                    best_name = name
+
+        whole_query_score = SequenceMatcher(None, compact_query, compact_name).ratio()
+        if whole_query_score > best_score:
+            best_score = whole_query_score
+            best_name = name
+
+    if best_score >= 0.88:
+        return best_name
+    return None
