@@ -11,6 +11,7 @@ from app.utils.text import extract_keywords
 
 logger = logging.getLogger(__name__)
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\s*(?:AM|PM)\b", re.IGNORECASE)
+COORD_RE = re.compile(r"\bco\s+ord(?:\s+inator)?s?\b", re.IGNORECASE)
 
 
 class RetrieverService:
@@ -21,7 +22,7 @@ class RetrieverService:
     async def retrieve(self, query: str, top_k: int | None = None) -> list[SearchMatch]:
         limit = top_k or max(5, self.settings.top_k)
         candidates = await self.vector_service.semantic_search(query, min(len(self.vector_service.records), limit * 4))
-        query_text = query.lower()
+        query_text = COORD_RE.sub(" coordinator ", query.lower())
         query_tokens = set(extract_keywords(query))
         if not query_tokens:
             query_tokens = set(extract_keywords(query, keep_generic_terms=True))

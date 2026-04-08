@@ -28,6 +28,7 @@ PLAIN_FIELD_RE = re.compile(r"(?:^|\n)\s*(?:[-*]\s*)?(?P<label>[A-Za-z][A-Za-z /
 SENTENCE_RE = re.compile(r"(?<=[.!?])\s+|\n+")
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 PHONE_RE = re.compile(r"(?:\+?\d[\d\s\-]{8,}\d)")
+COORD_RE = re.compile(r"\bco\s+ord(?:\s+inator)?s?\b", re.IGNORECASE)
 IGNORED_EVENT_TITLES = {
     "about jntuh",
     "about the ece department",
@@ -100,7 +101,7 @@ class LocalProvider:
         if not retrieved_context.strip():
             return FALLBACK_ANSWER
 
-        query_text = normalize_text(query.lower())
+        query_text = normalize_text(COORD_RE.sub(" coordinator ", query.lower()))
         query_tokens = set(extract_keywords(query))
         if not query_tokens:
             query_tokens = set(extract_keywords(query, keep_generic_terms=True))
@@ -115,7 +116,7 @@ class LocalProvider:
             term in query_text
             for term in ("contact", "coordinator", "coord", "faculty", "organizer", "email", "phone", "help desk")
         ):
-            answer = self._answer_contact(fields, sentences)
+            answer = self._answer_contact(query_text, fields, sentences)
             if answer:
                 return answer
 
@@ -247,7 +248,33 @@ class LocalProvider:
         parts = [part.strip(" -") for part in SENTENCE_RE.split(cleaned) if part.strip()]
         return [normalize_text(part) for part in parts if len(normalize_text(part)) >= 12]
 
-    def _answer_contact(self, fields: dict[str, str], sentences: list[str]) -> str | None:
+    def _answer_contact(self, query_text: str, fields: dict[str, str], sentences: list[str]) -> str | None:
+        wants_faculty = "faculty" in query_text and "coordinator" in query_text
+        wants_student = "student" in query_text and "coordinator" in query_text
+        wants_current = any(term in query_text for term in ("current", "present", "now", "latest"))
+
+        if wants_faculty and "faculty coordinator" in fields:
+            lines = [
+                "- Faculty Coordinator: " + fields["faculty coordinator"],
+            ]
+            if "official email" in fields:
+                lines.append("- Official Email: " + fields["official email"])
+            return "Faculty Coordinator Details:\n" + "\n".join(lines)
+
+        if wants_student and "student coordinator" in fields:
+            lines = [
+                "- Student Coordinator: " + fields["student coordinator"],
+            ]
+            if "student coordinator contact number" in fields:
+                lines.append("- Student Coordinator Contact Number: " + fields["student coordinator contact number"])
+            elif "support phone" in fields:
+                lines.append("- Support Phone: " + fields["support phone"])
+            elif "phone" in fields:
+                lines.append("- Phone: " + fields["phone"])
+            if "official email" in fields:
+                lines.append("- Official Email: " + fields["official email"])
+            return "Student Coordinator Details:\n" + "\n".join(lines)
+
         contact_points: list[str] = []
         preferred_keys = (
             "faculty coordinator",
@@ -268,6 +295,8 @@ class LocalProvider:
         if not contact_points:
             for sentence in sentences:
                 lowered = sentence.lower()
+                if wants_current and "historical" in lowered:
+                    continue
                 if EMAIL_RE.search(sentence) or PHONE_RE.search(sentence) or any(
                     term in lowered for term in ("coordinator", "organizer", "contact", "help desk")
                 ):
