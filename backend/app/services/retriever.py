@@ -94,7 +94,21 @@ class RetrieverService:
             intents.add("venue")
         if any(term in query_text for term in ("register", "registration", "help desk", "spot registration", "id card")):
             intents.add("registration")
-        if any(term in query_text for term in ("contact", "coordinator", "coordinat", "email", "phone", "organizers", "organiz")):
+        if any(
+            term in query_text
+            for term in (
+                "contact",
+                "coordinator",
+                "coordinat",
+                "coord",
+                "faculty",
+                "student coordinator",
+                "email",
+                "phone",
+                "organizers",
+                "organiz",
+            )
+        ):
             intents.add("contact")
         if any(term in query_text for term in ("rule", "rules", "allowed", "late entry", "team", "members")):
             intents.add("rules")

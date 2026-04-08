@@ -37,28 +37,28 @@ interface SpeechRecognitionEventLike {
 
 const quickQuestionGroups = [
   {
-    label: "Event Locations",
+    label: "Schedule and Venues",
     questions: [
-      "Where is Hackathon?",
-      "Where is Robotics Workshop?",
-      "Where is the coding contest happening?",
-      "Where can I find the registration desk?"
+      "Where is the AI Workshop happening?",
+      "Where is the registration desk?",
+      "Where is the Paper Presentation Session?",
+      "Where will the Prize Distribution happen?"
     ]
   },
   {
-    label: "Timings",
+    label: "Timings and Rules",
     questions: [
-      "What are the event timings?",
-      "What is the timing of coding contest?",
-      "When does Hackathon start?",
-      "What time is the Robotics Workshop?"
+      "What are the event timings today?",
+      "What time does the AI Workshop start?",
+      "When does spot registration close?",
+      "What are the registration rules?"
     ]
   },
   {
-    label: "Overview",
+    label: "Overview and Contacts",
     questions: [
-      "List all events",
-      "Suggest events available",
+      "List all events in the symposium",
+      "Who are the coordinators of Spoorthi?",
       "Give me a quick overview of Spoorthi",
       "What can a beginner attend?"
     ]
@@ -70,7 +70,7 @@ const welcomeMessage: ChatMessage = {
   id: "welcome",
   role: "assistant",
   content:
-    "Hi, I’m Spoorthi Chatbot. Ask me about event locations, timings, registrations, or available fest events.",
+    "Hi, I'm Spoorthi Chatbot. Ask me about event locations, timings, registrations, coordinators, or available fest events.",
   createdAt: new Date().toISOString()
 };
 

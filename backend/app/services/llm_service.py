@@ -58,6 +58,7 @@ FIELD_LABELS = {
     "registration help desk location": "Registration Help Desk",
     "spot registration": "Spot Registration",
     "student coordinator": "Student Coordinator",
+    "student coordinator contact number": "Student Coordinator Contact Number",
     "support email": "Support Email",
     "support phone": "Support Phone",
     "team size": "Team Size",
@@ -110,7 +111,10 @@ class LocalProvider:
         fields = self._extract_fields(retrieved_context)
         sentences = self._extract_sentences(retrieved_context)
 
-        if any(term in query_text for term in ("contact", "coordinator", "organizer", "email", "phone", "help desk")):
+        if any(
+            term in query_text
+            for term in ("contact", "coordinator", "coord", "faculty", "organizer", "email", "phone", "help desk")
+        ):
             answer = self._answer_contact(fields, sentences)
             if answer:
                 return answer
@@ -248,6 +252,7 @@ class LocalProvider:
         preferred_keys = (
             "faculty coordinator",
             "student coordinator",
+            "student coordinator contact number",
             "support email",
             "official email",
             "support phone",

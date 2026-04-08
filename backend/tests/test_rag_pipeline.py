@@ -53,12 +53,12 @@ async def test_rag_pipeline_validation_queries(tmp_path: Path) -> None:
         memory_service=MemoryService(max_turns=6),
     )
 
-    hackathon = await rag_service.answer_query("Where is the hackathon?", session_id="test-session")
+    workshop_location = await rag_service.answer_query("Where is the AI workshop happening?", session_id="test-session")
     rules = await rag_service.answer_query("What are the rules for coding contest?", session_id="test-session")
     beginners = await rag_service.answer_query("Suggest some events for beginners", session_id="test-session")
     workshops = await rag_service.answer_query("What is the timing of workshops?", session_id="test-session")
 
-    assert "Block A Lab 3" in hackathon.answer
+    assert "Seminar Hall A" in workshop_location.answer
     assert rules.answer
     assert "beginner-friendly" in beginners.answer.lower() or "here are a few" in beginners.answer.lower()
     assert "11:00 AM" in workshops.answer or "AI Workshop" in workshops.answer

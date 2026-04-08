@@ -7,8 +7,9 @@
    - Network:      http://127.0.0.1:3000
 
  ✓ Starting...
- ✓ Ready in 2.2s
+ ✓ Ready in 4.8s
  ○ Compiling / ...
- ✓ Compiled / in 1667ms (1362 modules)
- GET / 200 in 2416ms
+ ✓ Compiled / in 3.6s (1362 modules)
+ GET / 200 in 5538ms
 Terminate batch job (Y/N)? [?25h
+

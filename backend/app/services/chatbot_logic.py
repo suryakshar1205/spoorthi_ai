@@ -3,86 +3,46 @@ from __future__ import annotations
 import re
 
 
-FALLBACK_ANSWER = "I don’t have that information. Please contact the organizers."
+FALLBACK_ANSWER = "I don't have that information. Please contact the organizers."
 
 STARTER_QUESTIONS = (
-    "Where is Hackathon?",
-    "What are the event timings?",
-    "List all events",
-    "Where is Robotics Workshop?",
+    "Where is the AI Workshop happening?",
+    "What are the event timings today?",
+    "List all events in the symposium",
+    "Who are the coordinators of Spoorthi?",
 )
 
 
 def normalize_query(query: str) -> str:
     lowered = query.lower().strip()
     lowered = re.sub(r"[^a-z0-9\s]", " ", lowered)
+    lowered = re.sub(r"\bco\s+ord(?:\s+inator)?s?\b", " coordinator ", lowered)
+    lowered = re.sub(r"\bcoordinator\s+s\b", " coordinators ", lowered)
+    lowered = re.sub(r"\bfacult(?:y)?\b", " faculty ", lowered)
+    replacements = {
+        "facult": "faculty",
+        "coord": "coordinator",
+        "coords": "coordinators",
+        "organisers": "organizers",
+    }
+    for source, target in replacements.items():
+        lowered = re.sub(rf"\b{source}\b", target, lowered)
     lowered = re.sub(r"\s+", " ", lowered)
     return lowered.strip()
 
 
 def route_predefined_query(query: str) -> str | None:
     normalized = normalize_query(query)
-
     if not normalized:
         return None
 
-    if not _has_fest_intent(normalized):
-        small_talk_response = _small_talk_response(normalized)
-        if small_talk_response:
-            return small_talk_response
+    small_talk_response = _small_talk_response(normalized)
+    if small_talk_response:
+        return small_talk_response
 
-    if _matches(normalized, "hackathon") and _matches_any(normalized, "where", "location", "venue"):
-        return (
-            "Hackathon Details:\n"
-            "- Location: Block A Lab 3\n"
-            "- Time: 10 AM to 6 PM\n"
-            "- Team Size: 2 to 4 members"
-        )
-
-    if _matches(normalized, "robotics workshop") and _matches_any(normalized, "where", "location", "venue"):
-        return (
-            "Robotics Workshop Details:\n"
-            "- Location: Block B Room 101\n"
-            "- Time: 11 AM to 1 PM\n"
-            "- Participation: Open to registered students"
-        )
-
-    if _matches(normalized, "coding contest") and _matches_any(normalized, "time", "timing", "when", "schedule"):
-        return (
-            "Coding Contest Details:\n"
-            "- Time: 2 PM to 5 PM\n"
-            "- Location: Seminar Hall\n"
-            "- Participation: Individual"
-        )
-
-    if normalized in {
-        "what are the event timings",
-        "what are event timings",
-        "show event timings",
-        "show me the event timings",
-        "what is the event timing",
-    }:
-        return (
-            "Event Timings:\n"
-            "- Hackathon: 10 AM to 6 PM\n"
-            "- Coding Contest: 2 PM to 5 PM\n"
-            "- Robotics Workshop: 11 AM to 1 PM"
-        )
-
-    if normalized in {
-        "list all events",
-        "show all events",
-        "what are the events",
-        "suggest events available",
-        "suggest events",
-    }:
-        return (
-            "Available Events:\n"
-            "- Hackathon\n"
-            "- Coding Contest\n"
-            "- Robotics Workshop"
-        )
-
+    # Fest-specific questions should be answered from the current bundled/admin knowledge,
+    # not from hardcoded shortcut text, so context file changes are reflected immediately
+    # after backend restart.
     return None
 
 
@@ -96,24 +56,24 @@ def _small_talk_response(normalized_query: str) -> str | None:
         return (
             "Hello! I am Spoorthi Chatbot.\n"
             "I can help you with:\n"
-            "- Event timings\n"
-            "- Venue and location details\n"
-            "- Registration and participation info"
+            "- Event schedules and timings\n"
+            "- Venue and registration details\n"
+            "- Coordinator and organizer information"
         )
     if any(term in normalized_query for term in checkin_terms):
         return (
             "Hello! I am doing well.\n"
-            "I am here to help with Spoorthi fest information like timings, venues, events, and registrations."
+            "I am here to help with Spoorthi fest details like timings, venues, registrations, and organizer contacts."
         )
     if any(term in normalized_query for term in gratitude_terms):
-        return "You are welcome. If you need fest details, I am here to help."
+        return "You are welcome. If you need any Spoorthi fest details, I am here to help."
     if any(term in normalized_query for term in closing_terms):
         return "Glad to help. See you soon at Spoorthi."
 
     words = normalized_query.split()
     if len(words) <= 4 and any(word in {"hi", "hello", "hey"} for word in words):
         return (
-            "Hi there! I can help with Spoorthi event schedules, locations, and registrations.\n"
+            "Hi there! I can help with Spoorthi schedules, locations, registrations, and organizer details.\n"
             "What would you like to know?"
         )
     return None
@@ -125,25 +85,25 @@ def _has_fest_intent(normalized_query: str) -> bool:
         "fest",
         "event",
         "events",
-        "hackathon",
-        "coding",
-        "contest",
         "workshop",
-        "robotics",
+        "registration",
+        "paper",
+        "presentation",
+        "schedule",
+        "timing",
         "venue",
         "location",
-        "timing",
-        "schedule",
-        "registration",
-        "organizer",
         "coordinator",
+        "coordinators",
+        "coord",
+        "faculty",
+        "student",
+        "organizer",
         "rules",
+        "symposium",
+        "prize",
     }
     return any(term in normalized_query.split() for term in fest_terms)
-
-
-def _matches(normalized_query: str, phrase: str) -> bool:
-    return phrase in normalized_query
 
 
 def _matches_any(normalized_query: str, *phrases: str) -> bool:

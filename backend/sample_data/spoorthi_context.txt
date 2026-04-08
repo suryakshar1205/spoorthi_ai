@@ -14,13 +14,15 @@
 * **Official Email:** `spoorthi@jntuh.ac.in`
 * **Test/Support Contact:** `spoorthi-ece@jntuh.test` | Phone: 90000 12345
 * **Historical Faculty Leadership:** Dr. K. Anitha Sheela (Professor & Head), Dr. A. Rajani (Chairperson), Dr. D. Srinivasa Rao (Faculty Coordinator).
-* **Current/Test Edition Coordinators:** * **Faculty Coordinator:** Dr. Kavitha Rao
-    * **Student Coordinator:** Akhil Reddy
+* **Current/Test Edition Coordinators:**
+  * **Faculty Coordinator:** Dr. Kavitha Rao
+  * **Student Coordinator:** Akhil Reddy
+  * **Student Coordinator Contact Number:** 90000 12345
 
 ---
 
 ## 3. Event Schedule & Logistics
-Spoorthi activities span the academic year (Phase 1: Workshops from Sept–Feb), culminating in a two-day symposium (Phase 2: March/April). Below is the schedule and venue mapping for the symposium days.
+Spoorthi activities span the academic year (Phase 1: Workshops from September-February), culminating in a two-day symposium (Phase 2: March/April). Below is the schedule and venue mapping for the symposium days.
 
 ### Master Schedule
 | Time | Event | Location |

@@ -189,10 +189,12 @@ class RAGService:
         if not contact_lines:
             return answer
 
+        prioritized_lines = self._prioritize_contact_lines(contact_lines)
+
         return (
             f"{FALLBACK_ANSWER}\n\n"
             "You can reach the organizers using these details from the current knowledge base:\n"
-            + "\n".join(f"- {line}" for line in contact_lines[:3])
+            + "\n".join(f"- {line}" for line in prioritized_lines[:4])
         )
 
     async def _lookup_contact_lines(self) -> list[str]:
@@ -221,7 +223,8 @@ class RAGService:
             return []
 
         cleaned_text = re.sub(r"[*_`#]+", "", text)
-        cleaned_text = re.sub(r"\s{2,}", " ", cleaned_text)
+        cleaned_text = re.sub(r"[ \t]{2,}", " ", cleaned_text)
+        cleaned_text = re.sub(r"\n{3,}", "\n\n", cleaned_text)
 
         prioritized: list[str] = []
 
@@ -273,6 +276,36 @@ class RAGService:
             seen.add(normalized)
             deduped.append(line)
 
+        return deduped
+
+    def _prioritize_contact_lines(self, lines: list[str]) -> list[str]:
+        def priority(line: str) -> tuple[int, str]:
+            lowered = line.lower().strip()
+            if lowered.startswith("faculty coordinator:"):
+                return (0, lowered)
+            if lowered.startswith("student coordinator:"):
+                return (1, lowered)
+            if lowered.startswith("student coordinator contact number:"):
+                return (2, lowered)
+            if lowered.startswith("support phone:") or lowered.startswith("phone:"):
+                return (3, lowered)
+            if lowered.startswith("official email:") or lowered.startswith("support email:") or lowered.startswith("email:"):
+                return (4, lowered)
+            if lowered.startswith("official web platforms:"):
+                return (5, lowered)
+            if lowered.startswith("help desk:"):
+                return (6, lowered)
+            return (10, lowered)
+
+        ordered = sorted(lines, key=priority)
+        deduped: list[str] = []
+        seen: set[str] = set()
+        for line in ordered:
+            normalized = re.sub(r"\s+", " ", line.lower()).strip()
+            if not normalized or normalized in seen:
+                continue
+            seen.add(normalized)
+            deduped.append(line)
         return deduped
 
     def _normalize_label(self, label: str) -> str:
