@@ -92,6 +92,12 @@ class RerankerService:
             intents.add("venue")
         if any(term in query_text for term in ("register", "registration", "help desk", "spot registration", "id card")):
             intents.add("registration")
+        if any(term in query_text for term in ("finance", "budget", "fund", "expenses")):
+            intents.add("finance")
+        if any(term in query_text for term in ("sponsor", "sponsors", "partner", "partners", "support partner", "support partners", "funding", "backing")):
+            intents.add("support")
+        if any(term in query_text for term in ("faculty team", "professor", "professors", "head of department", "hod")):
+            intents.add("faculty")
         if any(term in query_text for term in ("contact", "coordinator", "faculty", "student", "email", "phone", "organizer")):
             intents.add("contact")
         if any(term in query_text for term in ("rule", "rules", "allowed", "late entry", "team", "members")):
@@ -167,6 +173,12 @@ class RerankerService:
         if "contact" in intents and section == "contact":
             adjustment += 0.12
         if "registration" in intents and section == "registration":
+            adjustment += 0.12
+        if "finance" in intents and section == "finance":
+            adjustment += 0.12
+        if "support" in intents and section == "support":
+            adjustment += 0.12
+        if "faculty" in intents and section == "faculty":
             adjustment += 0.12
         if ("venue" in intents or "schedule" in intents or "events" in intents) and section in {"schedule", "venue", "events"}:
             adjustment += 0.1

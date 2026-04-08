@@ -32,6 +32,7 @@ QUERY_REPLACEMENTS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\bstud\b", re.IGNORECASE), " student "),
     (re.compile(r"\borganisers?\b", re.IGNORECASE), " organizers "),
     (re.compile(r"\bdept\b", re.IGNORECASE), " department "),
+    (re.compile(r"\bhod\b", re.IGNORECASE), " head of department "),
     (re.compile(r"\bregs?\b", re.IGNORECASE), " registration "),
     (re.compile(r"\bloc\b", re.IGNORECASE), " location "),
 )
@@ -342,6 +343,12 @@ def infer_chunk_metadata(file_name: str, text: str) -> dict[str, str]:
         section = "venue"
     elif any(term in lowered for term in ("register", "registration", "help desk", "id card")):
         section = "registration"
+    elif any(term in lowered for term in ("finance team", "budget", "expenses", "fund management", "financial support")):
+        section = "finance"
+    elif any(term in lowered for term in ("sponsor", "support partner", "alumni", "icici bank", "ieee student branch", "brainovision", "mathworks", "physitech", "ohm institute")):
+        section = "support"
+    elif any(term in lowered for term in ("head of department", "hod", "professor", "faculty team", "director", "faculty coordinator")):
+        section = "faculty"
     elif any(term in lowered for term in ("rule", "participants", "judges", "late entry", "team")):
         section = "rules"
     elif any(

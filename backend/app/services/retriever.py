@@ -145,6 +145,12 @@ class RetrieverService:
             intents.add("venue")
         if any(term in query_text for term in ("register", "registration", "help desk", "spot registration", "id card")):
             intents.add("registration")
+        if any(term in query_text for term in ("finance", "budget", "fund", "expenses")):
+            intents.add("finance")
+        if any(term in query_text for term in ("sponsor", "sponsors", "partner", "partners", "support partner", "support partners", "funding", "backing")):
+            intents.add("support")
+        if any(term in query_text for term in ("faculty team", "professor", "professors", "head of department", "hod")):
+            intents.add("faculty")
         if any(
             term in query_text
             for term in (
@@ -246,6 +252,15 @@ class RetrieverService:
         if "registration" in intents and (section == "registration" or "registration" in lowered or "help desk" in lowered):
             score += 0.45
             reasons.append("registration-match")
+        if "finance" in intents and (section == "finance" or any(term in lowered for term in ("finance team", "budget", "expenses", "fund management"))):
+            score += 0.45
+            reasons.append("finance-match")
+        if "support" in intents and (section == "support" or any(term in lowered for term in ("sponsor", "support partner", "funding", "bank", "alumni", "brainovision", "mathworks"))):
+            score += 0.45
+            reasons.append("support-match")
+        if "faculty" in intents and (section == "faculty" or any(term in lowered for term in ("professor", "head of department", "faculty team", "director"))):
+            score += 0.45
+            reasons.append("faculty-match")
         if "contact" in intents and (section == "contact" or any(term in lowered for term in ("coordinator", "email", "phone"))):
             score += 0.45
             reasons.append("contact-match")
@@ -307,6 +322,12 @@ class RetrieverService:
         if "contact" in intents and section == "contact":
             adjustment += 0.08
         if "registration" in intents and section == "registration":
+            adjustment += 0.08
+        if "finance" in intents and section == "finance":
+            adjustment += 0.08
+        if "support" in intents and section == "support":
+            adjustment += 0.08
+        if "faculty" in intents and section == "faculty":
             adjustment += 0.08
         if ("venue" in intents or "schedule" in intents or "events" in intents) and section in {"schedule", "venue", "events"}:
             adjustment += 0.06

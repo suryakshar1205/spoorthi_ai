@@ -127,6 +127,14 @@ class ContextBlock:
     content: str
 
 
+@dataclass(slots=True)
+class TopicCard:
+    title: str
+    fields: dict[str, str]
+    items: list[str]
+    lines: list[str]
+
+
 class LocalProvider:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
@@ -151,6 +159,7 @@ class LocalProvider:
 
         schedule_items = self._extract_schedule_items(retrieved_context)
         event_cards = self._extract_event_cards(retrieved_context)
+        topic_cards = self._extract_topic_cards(retrieved_context)
         self._merge_event_cards_into_schedule(schedule_items, event_cards)
         fields = self._extract_fields(retrieved_context)
         sentences = self._extract_sentences(retrieved_context)
@@ -202,12 +211,40 @@ class LocalProvider:
             if answer:
                 return answer
 
-        if any(term in query_text for term in ("history", "legacy", "overview", "about", "what is")):
-            answer = self._answer_overview(sentences)
+        if any(
+            term in query_text
+            for term in (
+                "sponsor",
+                "sponsors",
+                "partner",
+                "partners",
+                "support partner",
+                "support partners",
+                "faculty team",
+                "professor",
+                "professors",
+                "head of department",
+                "hod",
+                "finance",
+                "budget",
+                "fund",
+                "management",
+                "organization",
+                "legacy",
+                "impact",
+                "social",
+            )
+        ):
+            answer = self._answer_topic_specific(query_text, query_tokens, topic_cards)
             if answer:
                 return answer
 
-        answer = self._answer_generic(query_text, query_tokens, schedule_items, event_cards, sentences)
+        if any(term in query_text for term in ("history", "legacy", "overview", "about", "what is")):
+            answer = self._answer_overview(sentences, topic_cards, query_text, query_tokens)
+            if answer:
+                return answer
+
+        answer = self._answer_generic(query_text, query_tokens, schedule_items, event_cards, topic_cards, sentences)
         return answer or FALLBACK_ANSWER
 
     def _extract_context_blocks(self, context: str) -> list[ContextBlock]:
@@ -343,6 +380,36 @@ class LocalProvider:
 
             if len(fields) >= 2 and not self._looks_like_contact_card(lowered_title, fields):
                 cards.append(EventCard(title=title, fields=fields, lines=lines))
+        return cards
+
+    def _extract_topic_cards(self, text: str) -> list[TopicCard]:
+        cards: list[TopicCard] = []
+        for block in [part.strip() for part in re.split(r"\n{2,}", text) if part.strip()]:
+            lines = [line.strip() for line in block.splitlines() if line.strip()]
+            if len(lines) < 2:
+                continue
+
+            title = self._clean_report_title(lines[0].lstrip("#").strip())
+            if not title:
+                continue
+
+            fields: dict[str, str] = {}
+            items: list[str] = []
+            for line in lines[1:]:
+                if ":" in line:
+                    key, value = line.split(":", 1)
+                    normalized_key = normalize_text(key).lower()
+                    normalized_value = normalize_text(value)
+                    if normalized_key and normalized_value and normalized_key not in fields:
+                        fields[normalized_key] = normalized_value
+                    continue
+
+                normalized_line = normalize_text(line).strip("- ")
+                if normalized_line:
+                    items.append(normalized_line)
+
+            if fields or items:
+                cards.append(TopicCard(title=title, fields=fields, items=items, lines=lines))
         return cards
 
     def _looks_like_contact_card(self, lowered_title: str, fields: dict[str, str]) -> bool:
@@ -645,6 +712,17 @@ class LocalProvider:
 
         return "\n".join(fallback_lines) if len(fallback_lines) > 1 else None
 
+    def _answer_topic_specific(
+        self,
+        query_text: str,
+        query_tokens: set[str],
+        topic_cards: list[TopicCard],
+    ) -> str | None:
+        best_card = self._best_topic_card(query_tokens, topic_cards, query_text=query_text)
+        if not best_card:
+            return None
+        return self._format_topic_card(best_card)
+
     def _is_broad_event_query(self, query_text: str) -> bool:
         normalized_query = query_text.strip()
         if normalized_query in {"event", "events", "activity", "activities", "fest events", "technical events"}:
@@ -931,7 +1009,22 @@ class LocalProvider:
         heading = "Here are the most relevant event details I found:"
         return heading + "\n" + "\n".join(f"- {sentence}" for sentence in top_sentences)
 
-    def _answer_overview(self, sentences: list[str]) -> str | None:
+    def _answer_overview(
+        self,
+        sentences: list[str],
+        topic_cards: list[TopicCard],
+        query_text: str,
+        query_tokens: set[str],
+    ) -> str | None:
+        best_topic = self._best_topic_card(query_tokens, topic_cards, query_text=query_text)
+        if best_topic and best_topic.title.lower() in {
+            "institutional overview & event identity",
+            "history & evolution",
+            "organization & management",
+            "legacy & social impact",
+        }:
+            return self._format_topic_card(best_topic)
+
         overview_terms = ("spoorthi", "jntuh", "ece", "technical", "techno-cultural", "flagship", "2004", "2009")
         selected = [sentence for sentence in sentences if sum(term in sentence.lower() for term in overview_terms) >= 2]
         if not selected:
@@ -947,11 +1040,16 @@ class LocalProvider:
         query_tokens: set[str],
         schedule_items: list[dict[str, str]],
         event_cards: list[EventCard],
+        topic_cards: list[TopicCard],
         sentences: list[str],
     ) -> str | None:
         best_card = self._best_event_card(query_tokens, event_cards, query_text=query_text)
         if best_card:
             return self._format_event_card(best_card, heading=f"{best_card.title} Details:")
+
+        best_topic = self._best_topic_card(query_tokens, topic_cards, query_text=query_text)
+        if best_topic:
+            return self._format_topic_card(best_topic)
 
         ranked_schedule = self._rank_schedule_items(query_tokens, schedule_items)
         if ranked_schedule and ranked_schedule[0][0] >= 0.4:
@@ -1022,6 +1120,48 @@ class LocalProvider:
         ranked.sort(key=lambda item: item[0], reverse=True)
         return ranked[0][1] if ranked else None
 
+    def _best_topic_card(
+        self,
+        query_tokens: set[str],
+        cards: list[TopicCard],
+        *,
+        query_text: str | None = None,
+    ) -> TopicCard | None:
+        if not query_tokens or not cards:
+            return None
+
+        ranked: list[tuple[float, TopicCard]] = []
+        for card in cards:
+            title_text = normalize_query_text(card.title)
+            title_tokens = set(extract_keywords(title_text, keep_generic_terms=True))
+            haystack = normalize_query_text(
+                f"{card.title} {' '.join(f'{key} {value}' for key, value in card.fields.items())} {' '.join(card.items)}"
+            )
+            text_tokens = set(extract_keywords(haystack, keep_generic_terms=True))
+
+            title_exact_hits, title_fuzzy_hits = fuzzy_token_hits(query_tokens, title_tokens)
+            exact_hits, fuzzy_hits = fuzzy_token_hits(query_tokens, text_tokens)
+            title_bonus = 0.0
+            if query_text and title_text and title_text in query_text:
+                title_bonus += 1.0
+            if query_text and title_text and query_text in title_text:
+                title_bonus += 1.0
+            if query_tokens and all(any(token_matches(token, candidate) for candidate in title_tokens) for token in query_tokens):
+                title_bonus += 0.6
+
+            score = (
+                (title_exact_hits * 1.4)
+                + (title_fuzzy_hits * 0.8)
+                + (exact_hits * 0.55)
+                + (fuzzy_hits * 0.3)
+                + title_bonus
+            )
+            if score > 0:
+                ranked.append((score, card))
+
+        ranked.sort(key=lambda item: item[0], reverse=True)
+        return ranked[0][1] if ranked else None
+
     def _merge_event_cards_into_schedule(self, items: list[dict[str, str]], cards: list[EventCard]) -> None:
         existing = {(item["event"].lower(), item["time"].lower()) for item in items}
         for card in cards:
@@ -1056,6 +1196,20 @@ class LocalProvider:
             if key in used:
                 continue
             lines.append(f"- {self._field_label(key)}: {value}")
+            if len(lines) >= 6:
+                break
+
+        return "\n".join(lines)
+
+    def _format_topic_card(self, card: TopicCard) -> str:
+        lines = [f"{card.title} Details:"]
+        for key, value in card.fields.items():
+            lines.append(f"- {self._field_label(key)}: {value}")
+            if len(lines) >= 6:
+                return "\n".join(lines)
+
+        for item in card.items:
+            lines.append(f"- {item}")
             if len(lines) >= 6:
                 break
 

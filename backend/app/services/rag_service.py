@@ -289,7 +289,13 @@ class RAGService:
         elif any(term in query_text for term in ("overview", "about", "history", "what is")):
             section_hint = bool(sections & {"history", "general"})
         elif any(term in query_text for term in ("contact", "coordinator", "faculty", "student", "organizer", "phone", "email")):
-            section_hint = bool(sections & {"contact", "general"})
+            section_hint = bool(sections & {"contact", "faculty", "general"})
+        elif any(term in query_text for term in ("sponsor", "sponsors", "partner", "partners", "support partner", "support partners")):
+            section_hint = bool(sections & {"support", "general"})
+        elif any(term in query_text for term in ("finance", "budget", "fund", "expenses")):
+            section_hint = bool(sections & {"finance", "general"})
+        elif any(term in query_text for term in ("faculty team", "professor", "professors", "head of department", "hod")):
+            section_hint = bool(sections & {"faculty", "general"})
 
         is_relevant = (
             (coverage >= 0.22 and (best_lexical >= 0.08 or best_rerank >= self.settings.similarity_threshold))
