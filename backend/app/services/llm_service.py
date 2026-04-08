@@ -29,6 +29,7 @@ SENTENCE_RE = re.compile(r"(?<=[.!?])\s+|\n+")
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 PHONE_RE = re.compile(r"(?:\+?\d[\d\s\-]{8,}\d)")
 COORD_RE = re.compile(r"\bco\s+ord(?:\s+inator)?s?\b", re.IGNORECASE)
+REPORT_SECTION_RE = re.compile(r"^(?:\d+\.\s+)?(?P<title>[A-Za-z][A-Za-z0-9 &+/'()-]{2,90})$")
 EVENT_LINE_RE = re.compile(
     r"^(?P<name>[A-Za-z][A-Za-z0-9 &+/'()-]{2,80}?)(?:\s*\([^)]*\))?\s*(?:[:\-–—]|$)",
     re.IGNORECASE,
@@ -41,12 +42,21 @@ IGNORED_EVENT_TITLES = {
     "cultural and engagement activities",
     "event overview",
     "institutional context",
+    "institutional overview & event identity",
+    "history & evolution",
+    "organization & management",
+    "leadership & coordinators",
     "master schedule",
+    "promotional activities",
     "registration details",
     "rules and participation notes",
     "technical competitions",
     "technical events & event heads",
+    "faculty team",
+    "sponsors & partnerships",
+    "legacy & social impact",
     "venue directory",
+    "workshops",
     "workshops and emerging tech",
 }
 FIELD_LABELS = {
@@ -250,8 +260,14 @@ class LocalProvider:
             if len(lines) < 2:
                 continue
 
-            title = normalize_text(lines[0].lstrip("#").strip())
+            title = self._clean_report_title(lines[0].lstrip("#").strip())
             lowered_title = title.lower()
+
+            report_cards = self._extract_report_style_cards(lowered_title, title, lines[1:])
+            if report_cards:
+                cards.extend(report_cards)
+                continue
+
             if (
                 not title
                 or ":" in title
@@ -273,6 +289,89 @@ class LocalProvider:
             if len(fields) >= 2:
                 cards.append(EventCard(title=title, fields=fields, lines=lines))
         return cards
+
+    def _clean_report_title(self, title: str) -> str:
+        match = REPORT_SECTION_RE.match(normalize_text(title))
+        if not match:
+            return normalize_text(title)
+        return normalize_text(match.group("title"))
+
+    def _extract_report_style_cards(self, lowered_title: str, title: str, body_lines: list[str]) -> list[EventCard]:
+        cards: list[EventCard] = []
+
+        if lowered_title == "workshops":
+            for line in body_lines:
+                card = self._card_from_named_line(line, details_key="details")
+                if card:
+                    cards.append(card)
+            return cards
+
+        if lowered_title == "technical events & event heads":
+            for line in body_lines:
+                card = self._card_from_named_line(line, details_key="coordinators")
+                if card:
+                    cards.append(card)
+            return cards
+
+        if lowered_title == "experience zones":
+            for line in body_lines:
+                card = self._card_from_named_line(line, details_key="managed by")
+                if card:
+                    cards.append(card)
+            return cards
+
+        if lowered_title == "hackathon":
+            fields: dict[str, str] = {}
+            for line in body_lines:
+                if ":" in line:
+                    key, value = line.split(":", 1)
+                    fields[normalize_text(key).lower()] = normalize_text(value)
+                else:
+                    fields.setdefault("details", normalize_text(line))
+            if fields:
+                return [EventCard(title=title, fields=fields, lines=[title, *body_lines])]
+
+        if lowered_title == "promotional activities":
+            for line in body_lines:
+                normalized_line = normalize_text(line)
+                if not normalized_line:
+                    continue
+                cards.append(EventCard(title="Flashmob", fields={"details": normalized_line}, lines=[title, normalized_line]))
+            return cards
+
+        return cards
+
+    def _card_from_named_line(self, line: str, *, details_key: str) -> EventCard | None:
+        normalized_line = normalize_text(line)
+        if not normalized_line:
+            return None
+
+        if details_key == "coordinators":
+            match = re.match(r"^(?P<title>.+?)\s*[-–—]\s*Coordinators?\s*:\s*(?P<value>.+)$", normalized_line, re.IGNORECASE)
+            if match:
+                return EventCard(
+                    title=self._clean_report_title(match.group("title")),
+                    fields={"coordinators": normalize_text(match.group("value"))},
+                    lines=[normalized_line],
+                )
+
+        if ":" in normalized_line:
+            raw_title, raw_value = normalized_line.split(":", 1)
+            title = self._clean_report_title(raw_title)
+            value = normalize_text(raw_value)
+            if not title or not value:
+                return None
+
+            if details_key == "details" and "Coordinators:" in value:
+                details_part, coordinators_part = value.split("Coordinators:", 1)
+                fields = {"details": normalize_text(details_part)}
+                if normalize_text(coordinators_part):
+                    fields["coordinators"] = normalize_text(coordinators_part)
+                return EventCard(title=title, fields=fields, lines=[normalized_line])
+
+            return EventCard(title=title, fields={details_key: value}, lines=[normalized_line])
+
+        return None
 
     def _extract_sentences(self, text: str) -> list[str]:
         cleaned = text.replace("|", " ")
@@ -608,8 +707,6 @@ class LocalProvider:
 
         for card in event_cards:
             add_event(card.title)
-            for key in card.fields:
-                add_event(key)
 
         for sentence in sentences:
             candidate = sentence.strip()
