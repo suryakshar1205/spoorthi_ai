@@ -29,6 +29,10 @@ SENTENCE_RE = re.compile(r"(?<=[.!?])\s+|\n+")
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 PHONE_RE = re.compile(r"(?:\+?\d[\d\s\-]{8,}\d)")
 COORD_RE = re.compile(r"\bco\s+ord(?:\s+inator)?s?\b", re.IGNORECASE)
+EVENT_LINE_RE = re.compile(
+    r"^(?P<name>[A-Za-z][A-Za-z0-9 &+/'()-]{2,80}?)(?:\s*\([^)]*\))?\s*(?:[:\-–—]|$)",
+    re.IGNORECASE,
+)
 IGNORED_EVENT_TITLES = {
     "about jntuh",
     "about the ece department",
@@ -41,6 +45,7 @@ IGNORED_EVENT_TITLES = {
     "registration details",
     "rules and participation notes",
     "technical competitions",
+    "technical events & event heads",
     "venue directory",
     "workshops and emerging tech",
 }
@@ -129,8 +134,20 @@ class LocalProvider:
             if answer:
                 return answer
 
-        if any(term in query_text for term in ("list all events", "available events", "what are the events", "which events")):
-            answer = self._answer_event_list(schedule_items, event_cards)
+        if any(
+            term in query_text
+            for term in (
+                "list all events",
+                "available events",
+                "what are the events",
+                "which events",
+                "what events are happening",
+                "events are happening",
+                "what events",
+                "happening today",
+            )
+        ):
+            answer = self._answer_event_list(schedule_items, event_cards, sentences)
             if answer:
                 return answer
 
@@ -342,9 +359,28 @@ class LocalProvider:
             return None
         return "Organizer Contact Details:\n" + "\n".join(self._dedupe(contact_points)[:5])
 
-    def _answer_event_list(self, items: list[dict[str, str]], event_cards: list[EventCard]) -> str | None:
-        lines = ["Available Events:"]
+    def _answer_event_list(
+        self,
+        items: list[dict[str, str]],
+        event_cards: list[EventCard],
+        sentences: list[str],
+    ) -> str | None:
+        grouped = self._collect_event_groups(items, event_cards, sentences)
+
+        lines = ["Here are the main Spoorthi activities mentioned in the current context:"]
+
+        if grouped["workshops"]:
+            lines.append("- Workshops: " + ", ".join(grouped["workshops"][:4]))
+        if grouped["competitions"]:
+            lines.append("- Technical Events: " + ", ".join(grouped["competitions"][:7]))
+        if grouped["activities"]:
+            lines.append("- Other Highlights: " + ", ".join(grouped["activities"][:5]))
+
+        if len(lines) > 1:
+            return "\n".join(lines)
+
         seen: set[str] = set()
+        fallback_lines = ["Available Events:"]
 
         for item in items:
             event_name = normalize_text(item["event"])
@@ -358,9 +394,9 @@ class LocalProvider:
             if item.get("location") and item["location"] != "Location not specified":
                 summary.append(item["location"])
             suffix = f" ({' | '.join(summary)})" if summary else ""
-            lines.append(f"- {event_name}{suffix}")
-            if len(lines) >= 7:
-                return "\n".join(lines)
+            fallback_lines.append(f"- {event_name}{suffix}")
+            if len(fallback_lines) >= 7:
+                return "\n".join(fallback_lines)
 
         for card in event_cards:
             normalized = card.title.lower()
@@ -373,11 +409,11 @@ class LocalProvider:
             if card.fields.get("location"):
                 summary_bits.append(card.fields["location"])
             suffix = f" ({' | '.join(summary_bits)})" if summary_bits else ""
-            lines.append(f"- {card.title}{suffix}")
-            if len(lines) >= 7:
+            fallback_lines.append(f"- {card.title}{suffix}")
+            if len(fallback_lines) >= 7:
                 break
 
-        return "\n".join(lines) if len(lines) > 1 else None
+        return "\n".join(fallback_lines) if len(fallback_lines) > 1 else None
 
     def _answer_schedule(
         self,
@@ -521,6 +557,69 @@ class LocalProvider:
 
         intro = "Here are a few beginner-friendly options from the available fest context:"
         return intro + "\n" + "\n".join(suggestions[:4])
+
+    def _collect_event_groups(
+        self,
+        items: list[dict[str, str]],
+        event_cards: list[EventCard],
+        sentences: list[str],
+    ) -> dict[str, list[str]]:
+        groups = {
+            "workshops": [],
+            "competitions": [],
+            "activities": [],
+        }
+        seen: set[str] = set()
+
+        def add_event(name: str) -> None:
+            cleaned = normalize_text(name)
+            if not cleaned:
+                return
+            normalized = cleaned.lower().strip(" .:-")
+            if (
+                not normalized
+                or normalized in seen
+                or normalized in IGNORED_EVENT_TITLES
+                or normalized.startswith("spoorthi fest")
+                or "coordinator" in normalized
+                or "team" in normalized
+                or "department" in normalized
+                or normalized.startswith("history")
+                or normalized.startswith("organization")
+            ):
+                return
+
+            seen.add(normalized)
+
+            if "workshop" in normalized:
+                groups["workshops"].append(cleaned)
+            elif any(
+                term in normalized
+                for term in ("hackathon", "treasure hunt", "ideathon", "code clutch", "logic combat", "quiz", "circuit", "posteriza")
+            ):
+                groups["competitions"].append(cleaned)
+            elif any(term in normalized for term in ("flashmob", "art room", "tech room", "experience zone")):
+                groups["activities"].append(cleaned)
+            else:
+                groups["activities"].append(cleaned)
+
+        for item in items:
+            add_event(item["event"])
+
+        for card in event_cards:
+            add_event(card.title)
+            for key in card.fields:
+                add_event(key)
+
+        for sentence in sentences:
+            candidate = sentence.strip()
+            if len(candidate) > 120:
+                continue
+            match = EVENT_LINE_RE.match(candidate)
+            if match:
+                add_event(match.group("name"))
+
+        return groups
 
     def _answer_event_specific(
         self,
