@@ -827,7 +827,7 @@ class LocalProvider:
                 f"- Time: {item['time']}\n"
                 f"- Location: {item['location']}"
                 + (
-                    f"\n- Contact Coordinators for updated details: {best_card.fields['coordinators']}"
+                    f"\n- For updated details, please contact the respective coordinators: {best_card.fields['coordinators']}"
                     if best_card and best_card.fields.get("coordinators")
                     else ""
                 )
@@ -864,13 +864,15 @@ class LocalProvider:
                 if best_card.fields.get("time"):
                     lines.append(f"- Time: {best_card.fields['time']}")
                 if best_card.fields.get("coordinators"):
-                    lines.append(f"- Contact Coordinators for updated details: {best_card.fields['coordinators']}")
+                    lines.append(
+                        f"- For updated details, please contact the respective coordinators: {best_card.fields['coordinators']}"
+                    )
                 return f"{best_card.title} Location Details:\n" + "\n".join(lines)
             return (
                 f"{best_card.title} Location Details:\n"
                 "- Location: Not specified in the current context."
                 + (
-                    f"\n- Contact Coordinators for updated details: {best_card.fields['coordinators']}"
+                    f"\n- For updated details, please contact the respective coordinators: {best_card.fields['coordinators']}"
                     if best_card.fields.get("coordinators")
                     else ""
                 )
@@ -1256,6 +1258,13 @@ class LocalProvider:
             lines.append(f"- {self._field_label(key)}: {value}")
             if len(lines) >= 6:
                 break
+
+        if card.fields.get("coordinators"):
+            coordinator_line = (
+                f"- For updated details, please contact the respective coordinators: {card.fields['coordinators']}"
+            )
+            if coordinator_line not in lines:
+                lines.append(coordinator_line)
 
         return "\n".join(lines)
 

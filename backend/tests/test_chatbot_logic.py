@@ -82,7 +82,7 @@ def test_location_queries_return_location_fallback_when_not_specified() -> None:
         "Hackathon Location Details:\n"
         "- Location: Not specified in the current context.\n"
         "- Day: Day 1 and Day 2\n"
-        "- Contact Coordinators for updated details: Aditya, Naveen, Eswar, Veda, Nikhitha, Phaneendra, Vinay"
+        "- For updated details, please contact the respective coordinators: Aditya, Naveen, Eswar, Veda, Nikhitha, Phaneendra, Vinay"
     )
 
 
@@ -122,7 +122,7 @@ def test_event_location_queries_include_coordinator_contact_line() -> None:
         "- Location: Golden Jubilee Seminar Hall\n"
         "- Time: 11:00 AM\n"
         "- Day: Day 1\n"
-        "- Contact Coordinators for updated details: Suraj, Srujith, Bhargavi, Rajeswari"
+        "- For updated details, please contact the respective coordinators: Suraj, Srujith, Bhargavi, Rajeswari"
     )
 
 
@@ -133,7 +133,7 @@ def test_event_timing_queries_include_location_and_coordinator_contact_line() ->
         "- Time: Afternoon\n"
         "- Day: Day 1\n"
         "- Location: IoT Lab\n"
-        "- Contact Coordinators for updated details: Jithendra, Sharan, Sowmya Sri, Sravanthi"
+        "- For updated details, please contact the respective coordinators: Jithendra, Sharan, Sowmya Sri, Sravanthi"
     )
 
 

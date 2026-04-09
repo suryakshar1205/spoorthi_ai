@@ -677,8 +677,9 @@ def _event_response(normalized_query: str) -> str | None:
             lines.append(f"- Time: {event_details['time']}")
         if event_details.get("day") and event_details["day"] != "Not specified in the current context.":
             lines.append(f"- Day: {event_details['day']}")
-        if event_details.get("coordinators") and event_details["coordinators"] != "Not specified in the current context.":
-            lines.append(f"- Contact Coordinators for updated details: {event_details['coordinators']}")
+        precautionary_line = _precautionary_coordinator_line(event_details.get("coordinators"))
+        if precautionary_line:
+            lines.append(precautionary_line)
         return "\n".join(lines)
 
     if _wants_timing_details(normalized_query):
@@ -687,11 +688,16 @@ def _event_response(normalized_query: str) -> str | None:
             lines.append(f"- Day: {event_details['day']}")
         if event_details.get("location") and event_details["location"] != "Not specified in the current context.":
             lines.append(f"- Location: {event_details['location']}")
-        if event_details.get("coordinators") and event_details["coordinators"] != "Not specified in the current context.":
-            lines.append(f"- Contact Coordinators for updated details: {event_details['coordinators']}")
+        precautionary_line = _precautionary_coordinator_line(event_details.get("coordinators"))
+        if precautionary_line:
+            lines.append(precautionary_line)
         return "\n".join(lines)
 
-    return event_details["details"]
+    details = event_details["details"]
+    precautionary_line = _precautionary_coordinator_line(event_details.get("coordinators"))
+    if not precautionary_line:
+        return details
+    return f"{details}\n{precautionary_line}"
 
 
 def _best_event_match(normalized_query: str) -> str | None:
@@ -737,6 +743,12 @@ def _wants_location_details(normalized_query: str) -> bool:
 
 def _wants_timing_details(normalized_query: str) -> bool:
     return any(term in normalized_query for term in ("time", "timing", "timings", "when", "schedule", "afternoon", "morning"))
+
+
+def _precautionary_coordinator_line(coordinators: str | None) -> str | None:
+    if not coordinators or coordinators == "Not specified in the current context.":
+        return None
+    return f"- For updated details, please contact the respective coordinators: {coordinators}"
 
 
 def _person_role_response(normalized_query: str) -> str | None:
