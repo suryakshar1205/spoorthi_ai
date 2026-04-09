@@ -99,33 +99,109 @@ Coordinators: Surya, Srinidhi, Meghana, Neshitha, Sainag
 
 Tech Treasure Hunt
 Description: A technical treasure hunt that combines clues, teamwork, and problem solving
+Day: Day 2
+Location: F-14
 Coordinators: Bhavana, Gagan, Sonal, Mahesh
 
 IDEATHON
 Description: An innovation-focused event where students present ideas and solutions to real-world challenges
+Day: Day 2
+Time: Afternoon
+Location: Golden Jubilee Seminar Hall
 Coordinators: Shashank, Akshay, Divya, Anuhya
 
 Code Clutch
 Description: A coding event that focuses on programming skill, logical thinking, and problem solving
+Day: Day 1
+Time: Afternoon
+Location: IoT Lab
 Coordinators: Jithendra, Sharan, Sowmya Sri, Sravanthi
 
 Logic Combat
 Description: An event centered on analytical reasoning and challenging logic-based problems
+Day: Day 1
+Time: 11:00 AM
+Location: Golden Jubilee Seminar Hall
 Coordinators: Suraj, Srujith, Bhargavi, Rajeswari
 
 Tech Quiz
 Description: A technical quiz covering multiple engineering and technology domains
+Day: Day 2
+Time: Morning
+Location: Golden Jubilee Seminar Hall
 Coordinators: Hrushikesh Reddy, Vaishnav, Ravali Sri, Harika
 
 Proto Circuit
 Description: A circuit-based technical event encouraging practical electronics involvement
+Day: Day 1
+Time: 11:00 AM
+Location: F-12 & S-13
 Coordinators: Swetha, Abhinikshith, Navya Sri, Mani Vivek
 
 Posteriza
 Description: A creative poster presentation event for ideas, concepts, and research showcases
+Day: Day 2
+Location: S-12
 Coordinators: Maheshwar, Pavan, Mounika, Sadvi
 
-12. Legacy & Social Impact
+13. Updated Schedule & Venue Details
+
+Inauguration
+Day: Day 1
+Time: 11:00 AM
+
+Day 1 Main Schedule
+Time: 11:00 AM to 5:00 PM
+Details: All events are scheduled during this time window on Day 1
+
+Culturals
+Day: Day 1
+Time: After 5:00 PM
+Details: Cultural activities begin after the technical events
+
+DJ Dance
+Day: Day 1
+Time: Up to 8:30 PM
+
+Escape Room
+Day: Day 1
+Location: S-6
+
+Lazer Maze
+Day: Day 1
+Location: S-15
+
+VR Gaming
+Day: Day 1
+Location: F-9
+
+Hall of Horror
+Day: Day 1
+Location: S-2
+
+IDEATHON
+Day: Day 2
+Time: Afternoon
+Location: Golden Jubilee Seminar Hall
+Coordinators: Shashank, Akshay, Divya, Anuhya
+
+Posteriza
+Day: Day 2
+Location: S-12
+Coordinators: Maheshwar, Pavan, Mounika, Sadvi
+
+Tech Quiz
+Day: Day 2
+Time: Morning
+Location: Golden Jubilee Seminar Hall
+Coordinators: Hrushikesh Reddy, Vaishnav, Ravali Sri, Harika
+
+Tech Treasure Hunt
+Day: Day 2
+Location: F-14
+Coordinators: Bhavana, Gagan, Sonal, Mahesh
+
+14. Legacy & Social Impact
 - Spoorthi has a legacy of more than 20 years.
 - The fest combines technical learning, creativity, teamwork, and student engagement.
 - It has also included socially meaningful initiatives such as food donation drives and road safety awareness activities.

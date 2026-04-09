@@ -821,10 +821,16 @@ class LocalProvider:
             and not any(term in query_text for term in ("today", "happening", "schedule", "agenda", "timing", "workshops", "events"))
         ):
             item = ranked[0][1]
+            best_card = self._best_event_card(query_tokens, event_cards, query_text=query_text)
             return (
                 f"{item['event']} Details:\n"
                 f"- Time: {item['time']}\n"
                 f"- Location: {item['location']}"
+                + (
+                    f"\n- Contact Coordinators for updated details: {best_card.fields['coordinators']}"
+                    if best_card and best_card.fields.get("coordinators")
+                    else ""
+                )
             )
 
         lines = ["Here is the schedule available in the current fest context:"]
@@ -857,10 +863,17 @@ class LocalProvider:
                 lines = [f"- Location: {location_value}"]
                 if best_card.fields.get("time"):
                     lines.append(f"- Time: {best_card.fields['time']}")
+                if best_card.fields.get("coordinators"):
+                    lines.append(f"- Contact Coordinators for updated details: {best_card.fields['coordinators']}")
                 return f"{best_card.title} Location Details:\n" + "\n".join(lines)
             return (
                 f"{best_card.title} Location Details:\n"
                 "- Location: Not specified in the current context."
+                + (
+                    f"\n- Contact Coordinators for updated details: {best_card.fields['coordinators']}"
+                    if best_card.fields.get("coordinators")
+                    else ""
+                )
             )
 
         ranked = self._rank_schedule_items(query_tokens, schedule_items)

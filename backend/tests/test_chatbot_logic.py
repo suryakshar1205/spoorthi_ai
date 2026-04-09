@@ -78,7 +78,12 @@ def test_event_queries_tolerate_minor_typos_and_spacing(query: str, expected_hea
 
 def test_location_queries_return_location_fallback_when_not_specified() -> None:
     response = route_predefined_query("Where is hackthon?")
-    assert response == "Hackathon Location Details:\n- Location: Not specified in the current context."
+    assert response == (
+        "Hackathon Location Details:\n"
+        "- Location: Not specified in the current context.\n"
+        "- Day: Day 1 and Day 2\n"
+        "- Contact Coordinators for updated details: Aditya, Naveen, Eswar, Veda, Nikhitha, Phaneendra, Vinay"
+    )
 
 
 @pytest.mark.parametrize(
@@ -110,6 +115,28 @@ def test_coordinator_name_queries_return_event_roles(query: str, expected_answer
     assert route_predefined_query(query) == expected_answer
 
 
+def test_event_location_queries_include_coordinator_contact_line() -> None:
+    response = route_predefined_query("where is logic combat")
+    assert response == (
+        "Logic Combat Location Details:\n"
+        "- Location: Golden Jubilee Seminar Hall\n"
+        "- Time: 11:00 AM\n"
+        "- Day: Day 1\n"
+        "- Contact Coordinators for updated details: Suraj, Srujith, Bhargavi, Rajeswari"
+    )
+
+
+def test_event_timing_queries_include_location_and_coordinator_contact_line() -> None:
+    response = route_predefined_query("code clutch timing")
+    assert response == (
+        "Code Clutch Timing Details:\n"
+        "- Time: Afternoon\n"
+        "- Day: Day 1\n"
+        "- Location: IoT Lab\n"
+        "- Contact Coordinators for updated details: Jithendra, Sharan, Sowmya Sri, Sravanthi"
+    )
+
+
 @pytest.mark.parametrize(
     ("query", "expected_answer"),
     [
@@ -124,6 +151,10 @@ def test_coordinator_name_queries_return_event_roles(query: str, expected_answer
         (
             "who is satya savithri",
             "Dr. T. Satya Savithri is the Professor and Director, R&D Cell.",
+        ),
+        (
+            "who is madhavi latha",
+            "Dr. Makkena Madhavi Latha is the Senior Professor and Director, Innovative Technologies.",
         ),
         (
             "who is anitha sheela kancharla",

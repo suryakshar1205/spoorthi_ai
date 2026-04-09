@@ -156,6 +156,11 @@ PREDEFINED_FEST_FAQ = {
 
 PREDEFINED_EVENT_DETAILS = {
     "PCB Workshop": {
+        "summary": "Hands-on workshop on PCB design, schematic creation, layout design, and fabrication.",
+        "location": "Not specified in the current context.",
+        "time": "Not specified in the current context.",
+        "coordinators": "Yamini, Rajanna, Srinath, Tanveer",
+        "day": "Not specified in the current context.",
         "details": (
             "PCB Workshop Details:\n"
             "- Dates: March 16-17\n"
@@ -164,9 +169,13 @@ PREDEFINED_EVENT_DETAILS = {
             "- Coordinators: Yamini, Rajanna, Srinath, Tanveer\n"
             "- Outcome: Hands-on technical learning in circuit design and fabrication"
         ),
-        "location": "Not specified in the current context.",
     },
     "AI and IoT Workshop": {
+        "summary": "Two-day workshop covering AI-based image processing using MATLAB and IoT hands-on applications.",
+        "location": "Not specified in the current context.",
+        "time": "Not specified in the current context.",
+        "coordinators": "Not specified in the current context.",
+        "day": "Not specified in the current context.",
         "details": (
             "AI and IoT Workshop Details:\n"
             "- Duration: 2 days\n"
@@ -175,9 +184,13 @@ PREDEFINED_EVENT_DETAILS = {
             "- Expert Support: MathWorks speakers\n"
             "- Outcome: Practical exposure to emerging technologies and real-world applications"
         ),
-        "location": "Not specified in the current context.",
     },
     "Hackathon": {
+        "summary": "Two-day challenge focused on solving real-world problems through teamwork, prototyping, and innovation.",
+        "location": "Not specified in the current context.",
+        "time": "Not specified in the current context.",
+        "coordinators": "Aditya, Naveen, Eswar, Veda, Nikhitha, Phaneendra, Vinay",
+        "day": "Day 1 and Day 2",
         "details": (
             "Hackathon Details:\n"
             "- Duration: 2 days\n"
@@ -185,9 +198,13 @@ PREDEFINED_EVENT_DETAILS = {
             "- Skills Highlighted: Problem solving, teamwork, time management, technical creativity\n"
             "- Coordinators: Aditya, Naveen, Eswar, Veda, Nikhitha, Phaneendra, Vinay"
         ),
-        "location": "Not specified in the current context.",
     },
     "Flashmob": {
+        "summary": "Promotional activity to create excitement and spread awareness about the fest.",
+        "location": "Sarath City Capital Mall",
+        "time": "Not specified in the current context.",
+        "coordinators": "Adithya Singh, Greeshmitha, Zoyan, Lasya",
+        "day": "Promotional activity before the fest",
         "details": (
             "Flashmob Details:\n"
             "- Location: Sarath City Capital Mall\n"
@@ -195,79 +212,189 @@ PREDEFINED_EVENT_DETAILS = {
             "- Participants: Students from 1st year to 4th year\n"
             "- Coordinators: Adithya Singh, Greeshmitha, Zoyan, Lasya"
         ),
-        "location": "Sarath City Capital Mall",
     },
     "Art Room": {
+        "summary": "Creative zone for decorations, paintings, themes, and visual design.",
+        "location": "Not specified in the current context.",
+        "time": "Available during fest hours",
+        "coordinators": "Veda, Akanksha, Rishikesh, Sindhuja",
+        "day": "Day 1 and Day 2",
         "details": (
             "Art Room Details:\n"
             "- Purpose: Decorations, paintings, themes, and visual design for the department during the fest\n"
             "- Coordinators: Veda, Akanksha, Rishikesh, Sindhuja"
         ),
-        "location": "Not specified in the current context.",
     },
     "Tech Room": {
+        "summary": "Interactive zone with technical games, electronics activities, working models, and project demonstrations.",
+        "location": "Not specified in the current context.",
+        "time": "Available during fest hours",
+        "coordinators": "Surya, Srinidhi, Meghana, Neshitha, Sainag",
+        "day": "Day 1 and Day 2",
         "details": (
             "Tech Room Details:\n"
             "- Purpose: Technical games, electronics-based activities, working models, and project demonstrations\n"
             "- Coordinators: Surya, Srinidhi, Meghana, Neshitha, Sainag"
         ),
-        "location": "Not specified in the current context.",
     },
     "Tech Treasure Hunt": {
+        "summary": "A technical treasure hunt combining clues, teamwork, and problem solving.",
+        "location": "F-14",
+        "time": "Not specified in the current context.",
+        "coordinators": "Bhavana, Gagan, Sonal, Mahesh",
+        "day": "Day 2",
         "details": (
             "Tech Treasure Hunt Details:\n"
             "- Description: A technical treasure hunt that combines clues, teamwork, and problem solving\n"
+            "- Day: Day 2\n"
+            "- Location: F-14\n"
             "- Coordinators: Bhavana, Gagan, Sonal, Mahesh"
         ),
-        "location": "Not specified in the current context.",
     },
     "IDEATHON": {
+        "summary": "Innovation-focused event where participants present ideas and solutions to real-world challenges.",
+        "location": "Golden Jubilee Seminar Hall",
+        "time": "Afternoon",
+        "coordinators": "Shashank, Akshay, Divya, Anuhya",
+        "day": "Day 2",
         "details": (
             "IDEATHON Details:\n"
             "- Description: An innovation-focused event where students present ideas and solutions to real-world challenges\n"
+            "- Day: Day 2\n"
+            "- Time: Afternoon\n"
+            "- Location: Golden Jubilee Seminar Hall\n"
             "- Coordinators: Shashank, Akshay, Divya, Anuhya"
         ),
-        "location": "Not specified in the current context.",
     },
     "Code Clutch": {
+        "summary": "Coding event focused on programming skill, logical thinking, and problem solving.",
+        "location": "IoT Lab",
+        "time": "Afternoon",
+        "coordinators": "Jithendra, Sharan, Sowmya Sri, Sravanthi",
+        "day": "Day 1",
         "details": (
             "Code Clutch Details:\n"
             "- Description: A coding event that focuses on programming skill, logical thinking, and problem solving\n"
+            "- Day: Day 1\n"
+            "- Time: Afternoon\n"
+            "- Location: IoT Lab\n"
             "- Coordinators: Jithendra, Sharan, Sowmya Sri, Sravanthi"
         ),
-        "location": "Not specified in the current context.",
     },
     "Logic Combat": {
+        "summary": "Analytical reasoning event with challenging logic-based problems.",
+        "location": "Golden Jubilee Seminar Hall",
+        "time": "11:00 AM",
+        "coordinators": "Suraj, Srujith, Bhargavi, Rajeswari",
+        "day": "Day 1",
         "details": (
             "Logic Combat Details:\n"
             "- Description: An event centered on analytical reasoning and challenging logic-based problems\n"
+            "- Day: Day 1\n"
+            "- Time: 11:00 AM\n"
+            "- Location: Golden Jubilee Seminar Hall\n"
             "- Coordinators: Suraj, Srujith, Bhargavi, Rajeswari"
         ),
-        "location": "Not specified in the current context.",
     },
     "Tech Quiz": {
+        "summary": "Technical quiz covering multiple engineering and technology domains.",
+        "location": "Golden Jubilee Seminar Hall",
+        "time": "Morning",
+        "coordinators": "Hrushikesh Reddy, Vaishnav, Ravali Sri, Harika",
+        "day": "Day 2",
         "details": (
             "Tech Quiz Details:\n"
             "- Description: A technical quiz covering multiple engineering and technology domains\n"
+            "- Day: Day 2\n"
+            "- Time: Morning\n"
+            "- Location: Golden Jubilee Seminar Hall\n"
             "- Coordinators: Hrushikesh Reddy, Vaishnav, Ravali Sri, Harika"
         ),
-        "location": "Not specified in the current context.",
     },
     "Proto Circuit": {
+        "summary": "Circuit-based technical event encouraging practical electronics involvement.",
+        "location": "F-12 & S-13",
+        "time": "11:00 AM",
+        "coordinators": "Swetha, Abhinikshith, Navya Sri, Mani Vivek",
+        "day": "Day 1",
         "details": (
             "Proto Circuit Details:\n"
             "- Description: A circuit-based technical event encouraging practical electronics involvement\n"
+            "- Day: Day 1\n"
+            "- Time: 11:00 AM\n"
+            "- Location: F-12 & S-13\n"
             "- Coordinators: Swetha, Abhinikshith, Navya Sri, Mani Vivek"
         ),
-        "location": "Not specified in the current context.",
     },
     "Posteriza": {
+        "summary": "Creative poster presentation event for ideas, concepts, and research showcases.",
+        "location": "S-12",
+        "time": "Not specified in the current context.",
+        "coordinators": "Maheshwar, Pavan, Mounika, Sadvi",
+        "day": "Day 2",
         "details": (
             "Posteriza Details:\n"
             "- Description: A creative poster presentation event for ideas, concepts, and research showcases\n"
+            "- Day: Day 2\n"
+            "- Location: S-12\n"
             "- Coordinators: Maheshwar, Pavan, Mounika, Sadvi"
         ),
+    },
+    "Inauguration": {
+        "summary": "Opening ceremony of Spoorthi Fest.",
         "location": "Not specified in the current context.",
+        "time": "11:00 AM",
+        "coordinators": "Not specified in the current context.",
+        "day": "Day 1",
+        "details": "Inauguration Details:\n- Day: Day 1\n- Time: 11:00 AM",
+    },
+    "Escape Room": {
+        "summary": "Interactive experience activity.",
+        "location": "S-6",
+        "time": "Day 1",
+        "coordinators": "Not specified in the current context.",
+        "day": "Day 1",
+        "details": "Escape Room Details:\n- Day: Day 1\n- Location: S-6",
+    },
+    "Lazer Maze": {
+        "summary": "Interactive maze activity.",
+        "location": "S-15",
+        "time": "Day 1",
+        "coordinators": "Not specified in the current context.",
+        "day": "Day 1",
+        "details": "Lazer Maze Details:\n- Day: Day 1\n- Location: S-15",
+    },
+    "VR Gaming": {
+        "summary": "Virtual reality gaming activity.",
+        "location": "F-9",
+        "time": "Day 1",
+        "coordinators": "Not specified in the current context.",
+        "day": "Day 1",
+        "details": "VR Gaming Details:\n- Day: Day 1\n- Location: F-9",
+    },
+    "Hall of Horror": {
+        "summary": "Interactive themed activity.",
+        "location": "S-2",
+        "time": "Day 1",
+        "coordinators": "Not specified in the current context.",
+        "day": "Day 1",
+        "details": "Hall of Horror Details:\n- Day: Day 1\n- Location: S-2",
+    },
+    "Culturals": {
+        "summary": "Cultural performances after the technical events.",
+        "location": "Not specified in the current context.",
+        "time": "After 5:00 PM",
+        "coordinators": "Not specified in the current context.",
+        "day": "Day 1",
+        "details": "Culturals Details:\n- Day: Day 1\n- Time: After 5:00 PM",
+    },
+    "DJ Dance": {
+        "summary": "DJ dance session during the evening celebrations.",
+        "location": "Not specified in the current context.",
+        "time": "Up to 8:30 PM",
+        "coordinators": "Not specified in the current context.",
+        "day": "Day 1",
+        "details": "DJ Dance Details:\n- Day: Day 1\n- Time: Up to 8:30 PM",
     },
 }
 
@@ -285,6 +412,13 @@ PREDEFINED_EVENT_ALIASES = {
     "Tech Quiz": ("tech quiz", "technical quiz", "techquiz"),
     "Proto Circuit": ("proto circuit", "protocircuit"),
     "Posteriza": ("posteriza", "poster presentation", "poster event"),
+    "Inauguration": ("inauguration",),
+    "Escape Room": ("escape room", "escaperoom"),
+    "Lazer Maze": ("lazer maze", "laser maze", "lazermaze", "lasermaze"),
+    "VR Gaming": ("vr gaming", "v r gaming", "vrgaming"),
+    "Hall of Horror": ("hall of horror", "horror hall", "hallofhorror"),
+    "Culturals": ("culturals", "culturals"),
+    "DJ Dance": ("dj dance", "dj", "dj night"),
 }
 
 PERSON_ROLES = {
@@ -468,7 +602,24 @@ def _event_response(normalized_query: str) -> str | None:
     event_name = match
     event_details = PREDEFINED_EVENT_DETAILS[event_name]
     if _wants_location_details(normalized_query):
-        return f"{event_name} Location Details:\n- Location: {event_details['location']}"
+        lines = [f"{event_name} Location Details:", f"- Location: {event_details['location']}"]
+        if event_details.get("time") and event_details["time"] != "Not specified in the current context.":
+            lines.append(f"- Time: {event_details['time']}")
+        if event_details.get("day") and event_details["day"] != "Not specified in the current context.":
+            lines.append(f"- Day: {event_details['day']}")
+        if event_details.get("coordinators") and event_details["coordinators"] != "Not specified in the current context.":
+            lines.append(f"- Contact Coordinators for updated details: {event_details['coordinators']}")
+        return "\n".join(lines)
+
+    if _wants_timing_details(normalized_query):
+        lines = [f"{event_name} Timing Details:", f"- Time: {event_details['time']}"]
+        if event_details.get("day") and event_details["day"] != "Not specified in the current context.":
+            lines.append(f"- Day: {event_details['day']}")
+        if event_details.get("location") and event_details["location"] != "Not specified in the current context.":
+            lines.append(f"- Location: {event_details['location']}")
+        if event_details.get("coordinators") and event_details["coordinators"] != "Not specified in the current context.":
+            lines.append(f"- Contact Coordinators for updated details: {event_details['coordinators']}")
+        return "\n".join(lines)
 
     return event_details["details"]
 
@@ -514,6 +665,10 @@ def _wants_location_details(normalized_query: str) -> bool:
     return any(term in normalized_query for term in ("where is", "location", "venue", "held at", "happening at"))
 
 
+def _wants_timing_details(normalized_query: str) -> bool:
+    return any(term in normalized_query for term in ("time", "timing", "timings", "when", "schedule", "afternoon", "morning"))
+
+
 def _person_role_response(normalized_query: str) -> str | None:
     matched_name = _best_person_match(normalized_query)
     if not matched_name:
@@ -533,6 +688,8 @@ def _person_role_response(normalized_query: str) -> str | None:
 def _best_person_match(normalized_query: str) -> str | None:
     compact_query = normalized_query.replace(" ", "")
     query_tokens = normalized_query.split()
+    ignored_query_tokens = {"who", "is", "tell", "me", "about", "the", "a", "an", "dr", "doctor", "professor"}
+    name_query_tokens = [token for token in query_tokens if token not in ignored_query_tokens and len(token) >= 2]
     best_name = None
     best_score = 0.0
 
@@ -543,7 +700,19 @@ def _best_person_match(normalized_query: str) -> str | None:
         if normalized_name in normalized_query or compact_name in compact_query:
             return name
 
-        name_tokens = normalized_name.split()
+        name_tokens = [token for token in normalized_name.split() if token not in {"dr", "doctor"}]
+        token_hits = 0
+        if name_query_tokens:
+            for token in name_query_tokens:
+                if any(_tokens_are_similar(token, candidate) for candidate in name_tokens):
+                    token_hits += 1
+
+            if token_hits == len(name_query_tokens):
+                score = 5.0 + (token_hits / max(1, len(name_tokens)))
+                if score > best_score:
+                    best_score = score
+                    best_name = name
+
         window_lengths = {max(1, len(name_tokens) - 1), len(name_tokens), len(name_tokens) + 1}
         for window_length in window_lengths:
             if window_length > len(query_tokens):
@@ -563,3 +732,9 @@ def _best_person_match(normalized_query: str) -> str | None:
     if best_score >= 0.88:
         return best_name
     return None
+
+
+def _tokens_are_similar(left: str, right: str) -> bool:
+    if left == right:
+        return True
+    return SequenceMatcher(None, left, right).ratio() >= 0.84
