@@ -388,13 +388,13 @@ PREDEFINED_EVENT_DETAILS = {
         "day": "Day 1",
         "details": "Lazer Maze Details:\n- Day: Day 1\n- Location: S-15",
     },
-    "VR Gaming": {
-        "summary": "Virtual reality gaming activity.",
+    "INDULGE GAMING": {
+        "summary": "INDULGE gaming activity.",
         "location": "F-9",
-        "time": "Day 1",
-        "coordinators": "Not specified in the current context.",
-        "day": "Day 1",
-        "details": "VR Gaming Details:\n- Day: Day 1\n- Location: F-9",
+        "time": "Day 1, Day 2",
+        "coordinators": "Amarnath,Bhanu Kiran.",
+        "day": "Day 1,Day 2",
+        "details": "VR Gaming Details:\n- Day: Day 1, Day 2\n- Location: F-9",
     },
     "Hall of Horror": {
         "summary": "Interactive themed activity.",
