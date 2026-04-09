@@ -78,6 +78,7 @@ async def test_rag_pipeline_validation_queries(tmp_path: Path) -> None:
     sponsors = await rag_service.answer_query("Who are the sponsors?", session_id="test-session")
     finance_team = await rag_service.answer_query("Who is in the finance team?", session_id="test-session")
     hod = await rag_service.answer_query("Who is the HOD?", session_id="test-session")
+    faculty_details = await rag_service.answer_query("faculty details", session_id="test-session")
     unknown = await rag_service.answer_query("What is the hostel bus route for visitors?", session_id="test-session")
 
     assert "Dr. Anitha Sheela Kancharla" in faculty_coord.answer
@@ -101,6 +102,8 @@ async def test_rag_pipeline_validation_queries(tmp_path: Path) -> None:
     assert "Adithya Varma" in finance_team.answer or "Eshwar" in finance_team.answer
     assert "Key Faculty Team Details" in hod.answer or "Here's what I found:" in hod.answer
     assert "Dr. T. Madhavi Kumari" in hod.answer
+    assert "Key Faculty Team Details" in faculty_details.answer or "Here's what I found:" in faculty_details.answer
+    assert "Dr. T. Madhavi Kumari" in faculty_details.answer
     assert unknown.answer == EXPECTED_FALLBACK_WITH_CONTACTS
 
 

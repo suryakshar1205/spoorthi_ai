@@ -108,3 +108,32 @@ def test_location_queries_return_location_fallback_when_not_specified() -> None:
 )
 def test_coordinator_name_queries_return_event_roles(query: str, expected_answer: str) -> None:
     assert route_predefined_query(query) == expected_answer
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_answer"),
+    [
+        (
+            "who is dr t madhavi kumari",
+            "Dr. T. Madhavi Kumari is the Professor and Head of Department, ECE.",
+        ),
+        (
+            "tell me about chandrasekhar reddy",
+            "Dr. P. Chandrasekhar Reddy is the Senior Professor.",
+        ),
+        (
+            "who is satya savithri",
+            "Dr. T. Satya Savithri is the Professor and Director, R&D Cell.",
+        ),
+        (
+            "who is anitha sheela kancharla",
+            "Dr. Anitha Sheela Kancharla is the Faculty Coordinator of Spoorthi Fest and Professor and Director, UIIC.",
+        ),
+        (
+            "who is rajani",
+            "Dr. A. Rajani is the Professor.",
+        ),
+    ],
+)
+def test_professor_name_queries_return_faculty_roles(query: str, expected_answer: str) -> None:
+    assert route_predefined_query(query) == expected_answer

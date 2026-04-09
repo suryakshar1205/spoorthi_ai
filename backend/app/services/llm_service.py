@@ -194,7 +194,7 @@ class LocalProvider:
 
         if any(
             term in query_text
-            for term in ("contact", "coordinator", "coord", "faculty", "organizer", "email", "phone", "help desk")
+            for term in ("contact", "coordinator", "coord", "organizer", "email", "phone", "help desk")
         ):
             answer = self._answer_event_contact(query_text, query_tokens, event_cards)
             if answer:
@@ -248,6 +248,7 @@ class LocalProvider:
                 "partners",
                 "support partner",
                 "support partners",
+                "faculty",
                 "faculty team",
                 "professor",
                 "professors",

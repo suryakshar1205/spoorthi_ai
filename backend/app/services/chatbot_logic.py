@@ -287,8 +287,14 @@ PREDEFINED_EVENT_ALIASES = {
     "Posteriza": ("posteriza", "poster presentation", "poster event"),
 }
 
-COORDINATOR_ROLES = {
-    "Dr. Anitha Sheela Kancharla": ("Faculty Coordinator of Spoorthi Fest",),
+PERSON_ROLES = {
+    "Dr. T. Madhavi Kumari": ("Professor and Head of Department, ECE",),
+    "Dr. P. Chandrasekhar Reddy": ("Senior Professor",),
+    "Dr. Makkena Madhavi Latha": ("Senior Professor and Director, Innovative Technologies",),
+    "Dr. M. Asha Rani": ("Senior Professor and Founder Director, JNTUH TBI",),
+    "Dr. T. Satya Savithri": ("Professor and Director, R&D Cell",),
+    "Dr. Anitha Sheela Kancharla": ("Faculty Coordinator of Spoorthi Fest", "Professor and Director, UIIC"),
+    "Dr. A. Rajani": ("Professor",),
     "Naveen": ("Student Coordinator of Spoorthi Fest", "Coordinator of Hackathon"),
     "Nikitha": ("Student Coordinator of Spoorthi Fest",),
     "Aditya Singh": ("Student Coordinator of Spoorthi Fest",),
@@ -379,9 +385,9 @@ def route_predefined_query(query: str) -> str | None:
     if predefined_faq_response:
         return predefined_faq_response
 
-    coordinator_response = _coordinator_name_response(normalized)
-    if coordinator_response:
-        return coordinator_response
+    person_role_response = _person_role_response(normalized)
+    if person_role_response:
+        return person_role_response
 
     event_response = _event_response(normalized)
     if event_response:
@@ -508,12 +514,12 @@ def _wants_location_details(normalized_query: str) -> bool:
     return any(term in normalized_query for term in ("where is", "location", "venue", "held at", "happening at"))
 
 
-def _coordinator_name_response(normalized_query: str) -> str | None:
-    matched_name = _best_coordinator_match(normalized_query)
+def _person_role_response(normalized_query: str) -> str | None:
+    matched_name = _best_person_match(normalized_query)
     if not matched_name:
         return None
 
-    roles = COORDINATOR_ROLES[matched_name]
+    roles = PERSON_ROLES[matched_name]
     if len(roles) == 1:
         return f"{matched_name} is the {roles[0]}."
 
@@ -524,13 +530,13 @@ def _coordinator_name_response(normalized_query: str) -> str | None:
     return f"{matched_name} is the {roles_text}."
 
 
-def _best_coordinator_match(normalized_query: str) -> str | None:
+def _best_person_match(normalized_query: str) -> str | None:
     compact_query = normalized_query.replace(" ", "")
     query_tokens = normalized_query.split()
     best_name = None
     best_score = 0.0
 
-    for name in COORDINATOR_ROLES:
+    for name in PERSON_ROLES:
         normalized_name = normalize_query(name)
         compact_name = normalized_name.replace(" ", "")
 
