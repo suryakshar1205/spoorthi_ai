@@ -171,9 +171,10 @@ Lazer Maze
 Day: Day 1
 Location: S-15
 
-VR Gaming
-Day: Day 1
+Indulge Gaming
+Day: Day 1, Day 2
 Location: F-9
+Coordinators: Amarnath, Bhanu Kiran
 
 Hall of Horror
 Day: Day 1

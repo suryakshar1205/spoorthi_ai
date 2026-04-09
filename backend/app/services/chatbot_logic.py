@@ -164,7 +164,7 @@ PREDEFINED_DAY_DETAILS = {
         "- Code Clutch: Afternoon at IoT Lab\n"
         "- Escape Room: S-6\n"
         "- Lazer Maze: S-15\n"
-        "- VR Gaming: F-9\n"
+        "- Indulge Gaming: F-9\n"
         "- Hall of Horror: S-2\n"
         "- Culturals: After 5:00 PM\n"
         "- DJ Dance: Up to 8:30 PM"
@@ -388,13 +388,18 @@ PREDEFINED_EVENT_DETAILS = {
         "day": "Day 1",
         "details": "Lazer Maze Details:\n- Day: Day 1\n- Location: S-15",
     },
-    "INDULGE GAMING": {
-        "summary": "INDULGE gaming activity.",
+    "Indulge Gaming": {
+        "summary": "Interactive gaming activity.",
         "location": "F-9",
         "time": "Day 1, Day 2",
-        "coordinators": "Amarnath,Bhanu Kiran.",
-        "day": "Day 1,Day 2",
-        "details": "VR Gaming Details:\n- Day: Day 1, Day 2\n- Location: F-9",
+        "coordinators": "Amarnath, Bhanu Kiran",
+        "day": "Day 1, Day 2",
+        "details": (
+            "Indulge Gaming Details:\n"
+            "- Day: Day 1, Day 2\n"
+            "- Location: F-9\n"
+            "- Coordinators: Amarnath, Bhanu Kiran"
+        ),
     },
     "Hall of Horror": {
         "summary": "Interactive themed activity.",
@@ -439,7 +444,7 @@ PREDEFINED_EVENT_ALIASES = {
     "Inauguration": ("inauguration",),
     "Escape Room": ("escape room", "escaperoom"),
     "Lazer Maze": ("lazer maze", "laser maze", "lazermaze", "lasermaze"),
-    "VR Gaming": ("vr gaming", "v r gaming", "vrgaming"),
+    "Indulge Gaming": ("indulge gaming", "indulge", "vr gaming", "v r gaming", "vrgaming"),
     "Hall of Horror": ("hall of horror", "horror hall", "hallofhorror"),
     "Culturals": ("culturals", "culturals"),
     "DJ Dance": ("dj dance", "dj", "dj night"),
