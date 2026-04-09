@@ -154,6 +154,19 @@ def test_day_queries_return_daywise_schedule(query: str, expected_heading: str, 
 
 
 @pytest.mark.parametrize(
+    "query",
+    [
+        "who is the hod",
+        "who is the hod of ece",
+        "head of department of ece",
+        "ece hod",
+    ],
+)
+def test_hod_queries_return_madhavi_kumari(query: str) -> None:
+    assert route_predefined_query(query) == "Dr. T. Madhavi Kumari is the Professor and Head of Department, ECE."
+
+
+@pytest.mark.parametrize(
     ("query", "expected_answer"),
     [
         (

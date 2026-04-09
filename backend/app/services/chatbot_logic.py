@@ -539,6 +539,10 @@ def route_predefined_query(query: str) -> str | None:
     if small_talk_response:
         return small_talk_response
 
+    faculty_title_response = _faculty_title_response(normalized)
+    if faculty_title_response:
+        return faculty_title_response
+
     predefined_faq_response = PREDEFINED_FEST_FAQ_BY_NORMALIZED_QUERY.get(normalized)
     if predefined_faq_response:
         return predefined_faq_response
@@ -620,6 +624,20 @@ def _has_fest_intent(normalized_query: str) -> bool:
 
 def _matches_any(normalized_query: str, *phrases: str) -> bool:
     return any(phrase in normalized_query for phrase in phrases)
+
+
+def _faculty_title_response(normalized_query: str) -> str | None:
+    hod_terms = (
+        "hod",
+        "head of department",
+        "head of the department",
+    )
+    if (
+        any(term in normalized_query for term in hod_terms)
+        and any(term in normalized_query for term in ("ece", "electronics", "communication", "department", "spoorthi", "jntuh", "who"))
+    ) or normalized_query.strip() in {"hod", "ece hod"}:
+        return "Dr. T. Madhavi Kumari is the Professor and Head of Department, ECE."
+    return None
 
 
 def _day_details_response(normalized_query: str) -> str | None:
