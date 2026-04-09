@@ -154,6 +154,30 @@ PREDEFINED_FEST_FAQ = {
     ),
 }
 
+PREDEFINED_DAY_DETAILS = {
+    "day 1": (
+        "Day 1 Details:\n"
+        "- Inauguration: 11:00 AM\n"
+        "- Main Technical Events: 11:00 AM to 5:00 PM\n"
+        "- Logic Combat: 11:00 AM at Golden Jubilee Seminar Hall\n"
+        "- Proto Circuit: 11:00 AM at F-12 & S-13\n"
+        "- Code Clutch: Afternoon at IoT Lab\n"
+        "- Escape Room: S-6\n"
+        "- Lazer Maze: S-15\n"
+        "- VR Gaming: F-9\n"
+        "- Hall of Horror: S-2\n"
+        "- Culturals: After 5:00 PM\n"
+        "- DJ Dance: Up to 8:30 PM"
+    ),
+    "day 2": (
+        "Day 2 Details:\n"
+        "- Tech Quiz: Morning at Golden Jubilee Seminar Hall\n"
+        "- IDEATHON: Afternoon at Golden Jubilee Seminar Hall\n"
+        "- Posteriza: S-12\n"
+        "- Tech Treasure Hunt: F-14"
+    ),
+}
+
 PREDEFINED_EVENT_DETAILS = {
     "PCB Workshop": {
         "summary": "Hands-on workshop on PCB design, schematic creation, layout design, and fabrication.",
@@ -519,6 +543,10 @@ def route_predefined_query(query: str) -> str | None:
     if predefined_faq_response:
         return predefined_faq_response
 
+    day_details_response = _day_details_response(normalized)
+    if day_details_response:
+        return day_details_response
+
     person_role_response = _person_role_response(normalized)
     if person_role_response:
         return person_role_response
@@ -592,6 +620,25 @@ def _has_fest_intent(normalized_query: str) -> bool:
 
 def _matches_any(normalized_query: str, *phrases: str) -> bool:
     return any(phrase in normalized_query for phrase in phrases)
+
+
+def _day_details_response(normalized_query: str) -> str | None:
+    if _is_day_query(normalized_query, "day 1"):
+        return PREDEFINED_DAY_DETAILS["day 1"]
+    if _is_day_query(normalized_query, "day 2"):
+        return PREDEFINED_DAY_DETAILS["day 2"]
+    return None
+
+
+def _is_day_query(normalized_query: str, day_label: str) -> bool:
+    compact_query = normalized_query.replace(" ", "")
+    compact_day = day_label.replace(" ", "")
+    detail_terms = ("day", "details", "events", "happening", "schedule", "what", "show", "list")
+
+    if day_label in normalized_query or compact_day in compact_query:
+        return any(term in normalized_query for term in detail_terms) or normalized_query.strip() in {day_label, compact_day}
+
+    return False
 
 
 def _event_response(normalized_query: str) -> str | None:

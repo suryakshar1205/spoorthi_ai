@@ -138,6 +138,22 @@ def test_event_timing_queries_include_location_and_coordinator_contact_line() ->
 
 
 @pytest.mark.parametrize(
+    ("query", "expected_heading", "expected_event"),
+    [
+        ("details of day1", "Day 1 Details:", "Logic Combat: 11:00 AM at Golden Jubilee Seminar Hall"),
+        ("what happens on day 2", "Day 2 Details:", "IDEATHON: Afternoon at Golden Jubilee Seminar Hall"),
+        ("day1 events", "Day 1 Details:", "Code Clutch: Afternoon at IoT Lab"),
+        ("day 2 schedule", "Day 2 Details:", "Tech Treasure Hunt: F-14"),
+    ],
+)
+def test_day_queries_return_daywise_schedule(query: str, expected_heading: str, expected_event: str) -> None:
+    response = route_predefined_query(query)
+    assert response is not None
+    assert expected_heading in response
+    assert expected_event in response
+
+
+@pytest.mark.parametrize(
     ("query", "expected_answer"),
     [
         (
