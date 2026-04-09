@@ -167,6 +167,36 @@ def test_hod_queries_return_madhavi_kumari(query: str) -> None:
 
 
 @pytest.mark.parametrize(
+    ("query", "expected_text"),
+    [
+        ("What are the events going on at spoorthi 2026", "Here are the main events and activities going on at Spoorthi 2026:"),
+        ("list events", "- Technical Events: Tech Treasure Hunt, IDEATHON, Code Clutch, Logic Combat, Tech Quiz, Proto Circuit, Posteriza"),
+        ("what events are happening", "- Experience and Activity Zones: Art Room, Tech Room, Escape Room, Lazer Maze, Indulge Gaming, Hall of Horror"),
+    ],
+)
+def test_generic_event_list_queries_return_grouped_event_overview(query: str, expected_text: str) -> None:
+    response = route_predefined_query(query)
+    assert response is not None
+    assert expected_text in response
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_text"),
+    [
+        ("tell me about spoorthi 2026", "Spoorthi 2026 is the annual techno-cultural symposium"),
+        ("what workshops are there", "Here are the workshops available at Spoorthi 2026:"),
+        ("who are the coordinators", "Here are the main Spoorthi coordinators:"),
+        ("who supports spoorthi", "Here are the main sponsors and support partners of Spoorthi 2026:"),
+        ("what activities are there", "Here are some of the main activities and experience zones at Spoorthi 2026:"),
+    ],
+)
+def test_generic_overview_questions_are_handled_better(query: str, expected_text: str) -> None:
+    response = route_predefined_query(query)
+    assert response is not None
+    assert expected_text in response
+
+
+@pytest.mark.parametrize(
     ("query", "expected_answer"),
     [
         (

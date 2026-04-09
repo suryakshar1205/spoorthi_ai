@@ -178,6 +178,60 @@ PREDEFINED_DAY_DETAILS = {
     ),
 }
 
+PREDEFINED_EVENTS_OVERVIEW = (
+    "Here are the main events and activities going on at Spoorthi 2026:\n"
+    "- Workshops: PCB Workshop, AI and IoT Workshop\n"
+    "- Flagship Competition: Hackathon\n"
+    "- Technical Events: Tech Treasure Hunt, IDEATHON, Code Clutch, Logic Combat, Tech Quiz, Proto Circuit, Posteriza\n"
+    "- Experience and Activity Zones: Art Room, Tech Room, Escape Room, Lazer Maze, Indulge Gaming, Hall of Horror\n"
+    "- Other Highlights: Inauguration, Flashmob, Culturals, DJ Dance\n"
+    "- Day 1 Highlights: Logic Combat, Proto Circuit, Code Clutch, Escape Room, Lazer Maze, Indulge Gaming, Hall of Horror, Culturals, DJ Dance\n"
+    "- Day 2 Highlights: Tech Quiz, IDEATHON, Posteriza, Tech Treasure Hunt"
+)
+
+PREDEFINED_WORKSHOPS_OVERVIEW = (
+    "Here are the workshops available at Spoorthi 2026:\n"
+    "- PCB Workshop: PCB design, schematic creation, layout design, and fabrication\n"
+    "- AI and IoT Workshop: AI-based image processing using MATLAB and IoT hands-on applications\n"
+    "- These workshops focus on practical learning and industry-relevant technologies."
+)
+
+PREDEFINED_COORDINATORS_OVERVIEW = (
+    "Here are the main Spoorthi coordinators:\n"
+    "- Faculty Coordinator: Dr. Anitha Sheela Kancharla\n"
+    "- Student Coordinators: Naveen, Nikitha, Aditya Singh, Yashashwini\n"
+    "- For event-specific updates, you can also contact the coordinators listed for each event."
+)
+
+PREDEFINED_SPONSORS_OVERVIEW = (
+    "Here are the main sponsors and support partners of Spoorthi 2026:\n"
+    "- ECE Alumni\n"
+    "- ICICI Bank\n"
+    "- IEEE Student Branch JNTUH\n"
+    "- OHM Institute\n"
+    "- MathWorks\n"
+    "- Physitech Electronics\n"
+    "- BrainOVision"
+)
+
+PREDEFINED_ACTIVITIES_OVERVIEW = (
+    "Here are some of the main activities and experience zones at Spoorthi 2026:\n"
+    "- Flashmob\n"
+    "- Art Room\n"
+    "- Tech Room\n"
+    "- Escape Room\n"
+    "- Lazer Maze\n"
+    "- Indulge Gaming\n"
+    "- Hall of Horror\n"
+    "- Culturals\n"
+    "- DJ Dance"
+)
+
+PREDEFINED_OVERVIEW_GENERIC = (
+    "Spoorthi 2026 is the annual techno-cultural symposium of the ECE department at JNTUH. "
+    "It includes workshops, hackathons, technical events, experience zones, and cultural activities."
+)
+
 PREDEFINED_EVENT_DETAILS = {
     "PCB Workshop": {
         "summary": "Hands-on workshop on PCB design, schematic creation, layout design, and fabrication.",
@@ -548,6 +602,30 @@ def route_predefined_query(query: str) -> str | None:
     if faculty_title_response:
         return faculty_title_response
 
+    generic_overview_response = _generic_overview_response(normalized)
+    if generic_overview_response:
+        return generic_overview_response
+
+    generic_event_list_response = _generic_event_list_response(normalized)
+    if generic_event_list_response:
+        return generic_event_list_response
+
+    generic_workshops_response = _generic_workshops_response(normalized)
+    if generic_workshops_response:
+        return generic_workshops_response
+
+    generic_coordinators_response = _generic_coordinators_response(normalized)
+    if generic_coordinators_response:
+        return generic_coordinators_response
+
+    generic_sponsors_response = _generic_sponsors_response(normalized)
+    if generic_sponsors_response:
+        return generic_sponsors_response
+
+    generic_activities_response = _generic_activities_response(normalized)
+    if generic_activities_response:
+        return generic_activities_response
+
     predefined_faq_response = PREDEFINED_FEST_FAQ_BY_NORMALIZED_QUERY.get(normalized)
     if predefined_faq_response:
         return predefined_faq_response
@@ -642,6 +720,98 @@ def _faculty_title_response(normalized_query: str) -> str | None:
         and any(term in normalized_query for term in ("ece", "electronics", "communication", "department", "spoorthi", "jntuh", "who"))
     ) or normalized_query.strip() in {"hod", "ece hod"}:
         return "Dr. T. Madhavi Kumari is the Professor and Head of Department, ECE."
+    return None
+
+
+def _generic_event_list_response(normalized_query: str) -> str | None:
+    generic_event_phrases = (
+        "what are the events going on",
+        "events going on",
+        "what events are going on",
+        "what events are happening",
+        "what are the events",
+        "list all events",
+        "list events",
+        "show events",
+        "show me the events",
+        "show me all events",
+        "available events",
+        "events at spoorthi",
+        "events in spoorthi",
+        "spoorthi 2026 events",
+    )
+    if any(phrase in normalized_query for phrase in generic_event_phrases):
+        return PREDEFINED_EVENTS_OVERVIEW
+    return None
+
+
+def _generic_overview_response(normalized_query: str) -> str | None:
+    overview_phrases = (
+        "tell me about spoorthi",
+        "about spoorthi",
+        "about spoorthi 2026",
+        "what is spoorthi 2026",
+        "give me an overview of spoorthi",
+        "overview of spoorthi",
+    )
+    if any(phrase in normalized_query for phrase in overview_phrases):
+        return PREDEFINED_OVERVIEW_GENERIC
+    return None
+
+
+def _generic_workshops_response(normalized_query: str) -> str | None:
+    workshop_phrases = (
+        "what workshops are there",
+        "which workshops are there",
+        "tell me about workshops",
+        "workshop details",
+        "show workshops",
+        "list workshops",
+    )
+    if any(phrase in normalized_query for phrase in workshop_phrases):
+        return PREDEFINED_WORKSHOPS_OVERVIEW
+    return None
+
+
+def _generic_coordinators_response(normalized_query: str) -> str | None:
+    coordinator_phrases = (
+        "who are the coordinators",
+        "show coordinators",
+        "list coordinators",
+        "coordinator details",
+        "organizer details",
+        "who manages spoorthi",
+    )
+    if any(phrase in normalized_query for phrase in coordinator_phrases):
+        return PREDEFINED_COORDINATORS_OVERVIEW
+    return None
+
+
+def _generic_sponsors_response(normalized_query: str) -> str | None:
+    sponsor_phrases = (
+        "who are the sponsors",
+        "show sponsors",
+        "list sponsors",
+        "support partners",
+        "who supports spoorthi",
+        "sponsor details",
+    )
+    if any(phrase in normalized_query for phrase in sponsor_phrases):
+        return PREDEFINED_SPONSORS_OVERVIEW
+    return None
+
+
+def _generic_activities_response(normalized_query: str) -> str | None:
+    activity_phrases = (
+        "what activities are there",
+        "fun activities",
+        "what can i explore",
+        "experience zones",
+        "other activities",
+        "what else is there",
+    )
+    if any(phrase in normalized_query for phrase in activity_phrases):
+        return PREDEFINED_ACTIVITIES_OVERVIEW
     return None
 
 
