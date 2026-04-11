@@ -1,169 +1,267 @@
 # Spoorthi Chatbot
+### A grounded full-stack festival assistant for Spoorthi 2026, built to answer event questions with live-manageable knowledge.
 
-Spoorthi Chatbot is a deployable fest-assistant web app for answering questions about Spoorthi using a local grounded RAG pipeline, an admin-managed knowledge base, and a polished Next.js chat UI.
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-Frontend-3178C6?logo=typescript&logoColor=white)
+![FAISS](https://img.shields.io/badge/FAISS-Vector%20Search-5C2D91)
+![Status](https://img.shields.io/badge/Status-Active-2EA043)
 
-## Stack
+## 🚀 Overview
+Spoorthi Chatbot is a domain-specific question answering system for the Spoorthi technical fest at JNTUH. It combines a polished Next.js chat experience with a FastAPI backend, a local retrieval pipeline, and an admin console for managing event knowledge without changing code.
 
-Backend:
-- FastAPI
-- FAISS-backed in-memory index rebuilt at startup
-- JWT admin authentication
-- semantic chunking + retrieval + reranking
-- local grounded response engine
+Why it matters:
+- Fest information is often scattered across posters, PDFs, coordinators, and informal updates.
+- Students need fast answers about events, venues, timings, coordinators, workshops, and day-wise schedules.
+- Organizers need a practical way to update the assistant as details evolve.
 
-Frontend:
-- Next.js App Router
-- Tailwind CSS
-- Framer Motion
-- dark mode
-- quick-question dropdown
-- admin console at `/admin`
+This project solves that by grounding responses in curated knowledge files and admin-added context, while still keeping the product deployable, lightweight, and easy to operate.
 
-## Project Layout
+## ✨ Key Features
+- **Grounded fest Q&A** powered by bundled Spoorthi knowledge, semantic retrieval, reranking, and local response generation.
+- **Streaming chat responses** with Server-Sent Events for a smoother real-time user experience.
+- **Curated quick-question categories** for common fest queries like events, coordinators, workshops, sponsors, and impact.
+- **Voice input support** in the chat UI using browser speech recognition.
+- **Admin knowledge console** with login, document upload, manual context injection, delete, and reindex workflows.
+- **Upload support for `.pdf`, `.txt`, and `.md`** so organizers can expand the knowledge base without code edits.
+- **Predefined answer routing** for high-frequency fest questions that need exact, stable responses.
+- **Event-aware responses** for day-wise schedules, locations, timings, coordinators, and role lookups.
+- **Typo-tolerant query handling** through spelling correction, normalization, and fuzzy matching.
+- **Local-first architecture** with no mandatory external LLM dependency in the default configuration.
 
+## 🛠️ Tech Stack
+### Frontend
+- **Next.js 15**
+- **React 19**
+- **TypeScript**
+- **Tailwind CSS**
+- **Framer Motion**
+- **Lucide React**
+
+### Backend
+- **FastAPI**
+- **Python 3.11**
+- **FAISS** for vector search
+- **Custom local embedding + retrieval pipeline**
+- **JWT authentication** for admin access
+
+### Tools / Libraries
+- **PyPDF** for document text extraction
+- **DuckDuckGo Search / SerpAPI hooks** for optional web fallback
+- **bcrypt** and **python-jose** for authentication
+- **pytest** and **pytest-asyncio** for backend testing
+- **Docker** and **Docker Compose** for containerized runs
+- **Render + Vercel friendly deployment setup**
+
+## 📂 Project Structure
 ```text
-backend/
-  app/
-    api/
-    models/
-    services/
-    utils/
-    config.py
-    main.py
-  requirements.txt
-  .env.example
-  sample_data/
-
-frontend/
-  app/
-  components/
-  lib/
-  package.json
-  .env.example
-
-render.yaml
-docker-compose.yml
-README.md
+spoorthi_ai/
+├── backend/
+│   ├── app/
+│   │   ├── api/            # User and admin API routes
+│   │   ├── models/         # Request/response and domain models
+│   │   ├── services/       # RAG, auth, vector search, memory, retrieval logic
+│   │   ├── utils/          # Text processing and document helpers
+│   │   ├── config.py       # Environment-driven settings
+│   │   └── main.py         # FastAPI app bootstrap + local full-stack launcher
+│   ├── sample_data/        # Bundled Spoorthi knowledge files
+│   ├── tests/              # Backend test suite
+│   ├── requirements.txt
+│   ├── .env.example
+│   └── Dockerfile
+├── frontend/
+│   ├── app/                # Next.js app router pages
+│   ├── components/         # Chat UI, admin UI, toasts, theme controls
+│   ├── lib/                # API client, storage helpers, shared types
+│   ├── package.json
+│   └── Dockerfile
+├── logs/                   # Local frontend runtime logs
+├── docker-compose.yml
+├── render.yaml
+└── README.md
 ```
 
-## Local Run
+## ⚙️ Installation & Setup
+### Prerequisites
+- **Python 3.11+**
+- **Node.js 18+** and **npm**
+- Optional: **Docker Desktop** if you want to run containers
 
-1. Install backend dependencies:
+### 1. Clone the repository
+```bash
+git clone <your-repo-url>
+cd spoorthi_ai
+```
 
+### 2. Set up the backend
 ```bash
 cd backend
-python -m pip install -r requirements.txt
+python -m venv .venv
 ```
 
-2. Install frontend dependencies:
+Activate the virtual environment:
+
+**Windows (PowerShell)**
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+**macOS / Linux**
+```bash
+source .venv/bin/activate
+```
+
+Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+Create your backend environment file from the example:
+
+**Windows (PowerShell)**
+```powershell
+Copy-Item .env.example .env
+```
+
+**macOS / Linux**
+```bash
+cp .env.example .env
+```
+
+Important backend variables:
+- `SPOORTHI_DEV_MODE=true`
+- `LOCAL_MODEL_NAME=local-context`
+- `LOAD_REPO_KNOWLEDGE=true`
+- `PERSIST_RUNTIME_KNOWLEDGE=false`
+- `ALLOWED_ORIGINS=http://localhost:3000`
+- `JWT_SECRET=change-me-in-production`
+- `ADMIN_USERNAME=admin`
+- `ADMIN_PASSWORD=admin123`
+
+### 3. Set up the frontend
+Open a new terminal:
 
 ```bash
 cd frontend
 npm install
 ```
 
-3. Configure backend env using [backend/.env.example](C:\Users\surya\Desktop\spoorthi_ai\backend\.env.example)
-
-Important values:
-- `LOCAL_MODEL_NAME=local-context`
-- `LOAD_REPO_KNOWLEDGE=true`
-- `PERSIST_RUNTIME_KNOWLEDGE=false`
-- `JWT_SECRET`
-- `ADMIN_USERNAME`
-- `ADMIN_PASSWORD`
-- `SPOORTHI_DEV_MODE=true`
-- `ALLOWED_ORIGINS=http://localhost:3000`
-
-4. Configure frontend env using [frontend/.env.example](C:\Users\surya\Desktop\spoorthi_ai\frontend\.env.example)
-
+Create `frontend/.env.local` and add:
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
 ```
 
-5. Start the full app:
-
-```bash
-python backend/app/main.py
-```
-
-Open:
-- frontend: `http://localhost:3000`
-- backend health: `http://127.0.0.1:8000/health`
-- backend docs: `http://127.0.0.1:8000/docs`
-
-## Docker
-
+### 4. Optional: run with Docker
+From the project root:
 ```bash
 docker compose up --build
 ```
 
 This starts:
-- backend on `8000`
-- frontend on `3000`
-- runtime backend data from `backend/data`
+- Frontend on `http://localhost:3000`
+- Backend on `http://127.0.0.1:8000`
 
-## Deployment
-
-Recommended setup:
-- deploy [backend](C:\Users\surya\Desktop\spoorthi_ai\backend) to Render
-- deploy [frontend](C:\Users\surya\Desktop\spoorthi_ai\frontend) to Vercel
-
-Free-tier architecture:
-- permanent bundled fest knowledge lives in `backend/sample_data`
-- the backend rebuilds the FAISS index from those repo files on startup
-- admin uploads and manual additions work during the live service session
-- runtime admin changes are temporary on Render Free and can be lost after restart or redeploy
-
-### Render backend
-
-Use [render.yaml](C:\Users\surya\Desktop\spoorthi_ai\render.yaml).
-
-Configured:
-- root directory: `backend`
-- start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- health check path: `/health`
-- free-tier friendly startup rebuild from `backend/sample_data`
-
-Important backend envs:
-- `LOCAL_MODEL_NAME`
-- `LOAD_REPO_KNOWLEDGE`
-- `PERSIST_RUNTIME_KNOWLEDGE`
-- `JWT_SECRET`
-- `ADMIN_USERNAME`
-- `ADMIN_PASSWORD`
-- `ALLOWED_ORIGINS`
-
-### Vercel frontend
-
-Deploy with root directory `frontend`.
-
-Set:
-
-```env
-NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
+## ▶️ Usage
+### Recommended local development flow
+Run the backend in one terminal:
+```bash
+cd backend
+uvicorn app.main:app --reload
 ```
 
-Then set backend `ALLOWED_ORIGINS` to your Vercel domain.
+Run the frontend in another terminal:
+```bash
+cd frontend
+npm run dev
+```
 
-## Features
+Open:
+- **Chat UI:** `http://localhost:3000`
+- **Admin Console:** `http://localhost:3000/admin`
+- **Backend Health:** `http://127.0.0.1:8000/health`
+- **API Docs:** `http://127.0.0.1:8000/docs`
 
-- Spoorthi Chatbot branding across the UI
-- admin login and knowledge management
-- upload `.pdf`, `.txt`, `.md`
-- add manual context instantly
-- delete indexed documents
-- rebuild the index from the admin panel
-- permanent repo-backed knowledge bootstrapping from `backend/sample_data`
-- friendly small-talk handling
-- direct answers for common fest questions
-- grounded fallback:
-  `I don't have that information. Please contact the organizers.`
-- contact enrichment when valid organizer details exist in the knowledge base
+### One-command local startup
+If you want the project to launch the frontend automatically from the backend entrypoint:
+```bash
+python backend/app/main.py
+```
 
-## Quick Test Questions
+This mode attempts to:
+- start the FastAPI backend
+- install frontend dependencies if missing
+- launch the Next.js frontend
+- write frontend logs to `logs/frontend.out.log` and `logs/frontend.err.log`
 
-- `Where is Hackathon?`
-- `What are the event timings?`
-- `List all events`
-- `Where is Robotics Workshop?`
-- `How can I contact the organizers?`
+### Example workflows
+#### Chat experience
+- Ask about event locations, timings, coordinators, schedules, sponsors, and workshops.
+- Use the quick-question panel for common fest FAQs.
+- Speak queries directly using the microphone button when browser support is available.
+
+#### Admin experience
+1. Open `/admin`
+2. Log in with `ADMIN_USERNAME` and `ADMIN_PASSWORD`
+3. Upload `.pdf`, `.txt`, or `.md` files
+4. Add manual context instantly
+5. Delete outdated documents or rebuild the knowledge base
+
+### Quality checks
+Run backend tests:
+```bash
+python -m pytest backend/tests -q
+```
+
+Run frontend checks:
+```bash
+cd frontend
+npm run lint
+npm run typecheck
+```
+
+## 📸 Screenshots / Demo
+Screenshots are not bundled in the repository yet. Good additions for this section would be:
+- Chat homepage
+- Quick-question panel
+- Streaming answer state
+- Admin knowledge console
+- Upload and reindex workflow
+
+Suggested asset paths:
+- `docs/screenshots/chat-ui.png`
+- `docs/screenshots/admin-console.png`
+- `docs/screenshots/quick-questions.png`
+
+## 💡 Unique Selling Points
+- **Not just a chatbot UI:** this project includes the operational tooling needed to keep answers fresh during a live event.
+- **Grounded, domain-specific retrieval:** answers are based on actual Spoorthi knowledge instead of generic open-ended generation.
+- **Admin-manageable knowledge base:** organizers can upload files and inject context without redeploying frontend code.
+- **Local-first by design:** the default setup avoids dependence on paid external LLM infrastructure.
+- **Strong portfolio value:** it demonstrates frontend UX, backend APIs, retrieval systems, authentication, testing, and deployment readiness in one project.
+
+## 🚧 Future Improvements
+- Persistent knowledge storage across restarts and redeploys
+- Richer admin roles and audit trails
+- Analytics for unanswered questions and FAQ gaps
+- Better document ingestion for schedules, posters, and tabular data
+- Multilingual support for festival audiences
+- More polished demo assets and contributor documentation
+
+## 🤝 Contributing
+Contributions are welcome, especially around retrieval quality, UI polish, documentation, and deployment improvements.
+
+Basic contribution flow:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run the backend tests and frontend checks
+5. Open a pull request with a clear summary
+
+When contributing, please keep changes grounded in the actual project scope and avoid introducing undocumented assumptions into the fest knowledge layer.
+
+## 📄 License
+This repository currently does **not** include a `LICENSE` file.
+
+If you plan to distribute, reuse, or open-source the project publicly, add an explicit license first so contributors and users know the terms clearly.
